@@ -36,17 +36,8 @@ async def clear_data(
         await db.commit()
         return {"message": f"Cleared table: {table}"}
     else:
-        # Clear all tables in correct order (respecting foreign keys)
-        clear_order = [
-            "food_entries",
-            "recipe_ingredients",
-            "daily_logs",
-            "recipes",
-            "ingredients",
-            "nutrition_labels",
-            "targets",
-        ]
-        for tbl in clear_order:
-            await db.execute(text(f"TRUNCATE TABLE {tbl} CASCADE"))
+        # Clear all tables in a single statement (CASCADE handles FK deps)
+        tables_str = ", ".join(ALLOWED_TABLES)
+        await db.execute(text(f"TRUNCATE TABLE {tables_str} CASCADE"))
         await db.commit()
-        return {"message": "Cleared all tables", "tables": clear_order}
+        return {"message": "Cleared all tables", "tables": ALLOWED_TABLES}

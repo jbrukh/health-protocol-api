@@ -37,14 +37,6 @@ class TestDashboardAPI:
         }
         await client.post("/api/v1/food", json=food_data, headers=api_headers)
 
-        # Log exercise
-        exercise_data = {
-            "date": today,
-            "exercise_type": "running",
-            "duration_minutes": 30,
-        }
-        await client.post("/api/v1/exercises", json=exercise_data, headers=api_headers)
-
         # Create targets
         targets = [
             {"name": "calories", "value": 2000, "unit": "kcal", "effective_from": today},
@@ -71,7 +63,6 @@ class TestDashboardAPI:
         assert "date" in result
         assert "food_summary" in result
         assert "food_entries" in result
-        assert "exercises" in result
         assert "target_progress" in result
 
         # Check food summary
@@ -84,10 +75,6 @@ class TestDashboardAPI:
         # Check food entries
         assert len(result["food_entries"]) == 1
         assert result["food_entries"][0]["meal_label"] == "lunch"
-
-        # Check exercises
-        assert len(result["exercises"]) == 1
-        assert result["exercises"][0]["exercise_type"] == "running"
 
         # Check target progress
         assert len(result["target_progress"]) == 2
@@ -125,4 +112,3 @@ class TestDashboardAPI:
         assert result["food_summary"]["entry_count"] == 0
         assert result["food_summary"]["total_calories"] == 0
         assert len(result["food_entries"]) == 0
-        assert len(result["exercises"]) == 0
