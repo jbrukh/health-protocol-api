@@ -1,164 +1,114 @@
-# Health Protocol API
+# Jake's Health Protocol API
 
-A fast web API for tracking health metrics like daily macros (protein, carbs, fat). Built with FastAPI and optimized for ChatGPT Custom GPT actions.
+A health tracking API built with FastAPI, designed to serve as a backend for a Custom GPT health advisor.
 
 ## Features
 
-- **Fast & Lightweight**: Built with FastAPI and SQLite
-- **ChatGPT Compatible**: Auto-generates OpenAPI specs for Custom GPT integration
-- **Easy Updates**: Multiple endpoints for different update patterns
-- **Persistent Storage**: SQLite database for reliable data storage
-- **Flexible CRUD**: Create, read, update, and delete macro entries
+- **Food Tracking**: Log food entries with ingredients, track macros and calories
+- **Ingredients**: Manage ingredient database with nutrition facts
+- **Recipes**: Create and log recipes with automatic macro calculation
+- **Supplements**: Track active supplements with dosage and timing
+- **Biomarkers**: Record and compare biomarker readings over time
+- **Exercise**: Log exercises with flexible metadata
+- **Targets**: Set and track nutritional goals
+- **Dashboard**: Daily overview with progress tracking
 
-## Setup
+## Tech Stack
 
-1. **Install dependencies**:
+- **Framework**: FastAPI
+- **Database**: PostgreSQL with SQLAlchemy 2.0 (async)
+- **Migrations**: Alembic
+- **Deployment**: Railway
+
+## API Documentation
+
+Once deployed, the OpenAPI docs are available at:
+- Swagger UI: `/docs`
+- ReDoc: `/redoc`
+- OpenAPI JSON: `/openapi.json`
+
+## Local Development
+
+1. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **Run the API**:
+3. Copy `.env.example` to `.env` and configure:
 ```bash
-uvicorn main:app --reload
+cp .env.example .env
 ```
 
-The API will be available at `http://localhost:8000`
+4. Run migrations:
+```bash
+alembic upgrade head
+```
+
+5. Start the server:
+```bash
+uvicorn app.main:app --reload
+```
+
+## Deployment to Railway
+
+1. Create a new Railway project
+2. Add a PostgreSQL database
+3. Connect your repository
+4. Set environment variables:
+   - `API_KEY`: Your secret API key
+   - `DATABASE_URL`: Will be set automatically by Railway (ensure it uses `postgresql+asyncpg://`)
+
+## Custom GPT Integration
+
+The API generates an OpenAPI 3.0 specification compatible with ChatGPT Custom GPT Actions:
+
+1. Deploy the API
+2. In ChatGPT, create a Custom GPT
+3. Add an Action using the OpenAPI schema from `/openapi.json`
+4. Configure authentication with Bearer token using your `API_KEY`
 
 ## API Endpoints
 
-### Core Operations
+### Food Tracking
+- `POST /api/v1/food` - Log food entry
+- `GET /api/v1/food?date={date}` - Get entries for date
+- `GET /api/v1/food/summary?date={date}` - Get daily summary
+- `GET /api/v1/food/history?start={date}&end={date}` - Get history
 
-- `POST /macros/` - Create or update a macro entry
-- `GET /macros/` - Get all macro entries (ordered by date, newest first)
-- `GET /macros/{date}` - Get entry for specific date (format: YYYY-MM-DD)
-- `PATCH /macros/{date}` - Partially update entry (only provided fields)
-- `PUT /macros/{date}/add` - Add to existing values (incremental update)
-- `DELETE /macros/{date}` - Delete entry for specific date
-- `GET /macros/{date}/summary` - Get entry with calculated calories
+### Ingredients
+- `POST /api/v1/ingredients` - Add ingredient
+- `GET /api/v1/ingredients` - List all
+- `GET /api/v1/ingredients/search?q={query}` - Search
+- `POST /api/v1/ingredients/{id}/set-default` - Set as default
 
-### Interactive Documentation
+### Recipes
+- `POST /api/v1/recipes` - Create recipe
+- `GET /api/v1/recipes` - List all
+- `POST /api/v1/recipes/{id}/log?date={date}` - Log recipe as food
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
+### Supplements
+- `GET /api/v1/supplements` - List active supplements
+- `GET /api/v1/supplements/all` - List all supplements
 
-## Usage Examples
+### Biomarkers
+- `POST /api/v1/biomarkers` - Record reading
+- `GET /api/v1/biomarkers?name={name}` - Get history
+- `GET /api/v1/biomarkers/latest` - Get latest readings
+- `GET /api/v1/biomarkers/compare` - Compare over time
 
-### Create or Update Entry
-```bash
-curl -X POST "http://localhost:8000/macros/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "date": "2025-11-30",
-    "protein": 150.5,
-    "carbs": 200.0,
-    "fat": 65.0
-  }'
-```
+### Exercises
+- `POST /api/v1/exercises` - Log exercise
+- `GET /api/v1/exercises?date={date}` - Get exercises
 
-### Add to Existing Entry
-```bash
-curl -X PUT "http://localhost:8000/macros/2025-11-30/add" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "protein": 25.0,
-    "carbs": 30.0,
-    "fat": 10.0
-  }'
-```
+### Targets
+- `POST /api/v1/targets` - Set target
+- `GET /api/v1/targets` - Get current targets
 
-### Get Entry with Summary
-```bash
-curl "http://localhost:8000/macros/2025-11-30/summary"
-```
-
-Response:
-```json
-{
-  "date": "2025-11-30",
-  "protein": 175.5,
-  "carbs": 230.0,
-  "fat": 75.0,
-  "total_calories": 2295.0,
-  "protein_calories": 702.0,
-  "carbs_calories": 920.0,
-  "fat_calories": 675.0
-}
-```
-
-## ChatGPT Custom GPT Integration
-
-### Option 1: Local Development (ngrok)
-
-1. Install ngrok: `brew install ngrok` (or download from ngrok.com)
-2. Start your API: `uvicorn main:app --reload`
-3. Expose with ngrok: `ngrok http 8000`
-4. Copy the HTTPS URL (e.g., `https://abc123.ngrok.io`)
-
-### Option 2: Deploy to Production
-
-Deploy to any hosting platform:
-- **Railway**: Connect GitHub repo, auto-deploys
-- **Render**: Free tier available
-- **Fly.io**: Quick deployments
-- **Heroku**: Classic option
-
-### Configure ChatGPT Custom GPT
-
-1. Go to ChatGPT → Create a GPT
-2. In "Configure" → "Actions" → "Create new action"
-3. Import the OpenAPI schema:
-   - Use: `https://your-domain.com/openapi.json`
-   - Or paste the schema from `/docs`
-4. Set authentication to "None" (or add API key auth if needed)
-
-### Suggested GPT Instructions
-
-```
-You are a health tracking assistant. Use the Health Protocol API to help users track their daily macros.
-
-Available actions:
-- Add macros for a date
-- Get macros for a specific date
-- View summaries with calculated calories
-- Update or modify existing entries
-
-When users mention eating food, ask for the macros and add them to today's date.
-Always provide summaries showing total calories and macro breakdown.
-```
-
-## Data Model
-
-### MacroEntry
-- `id`: Integer (auto-generated)
-- `date`: Date (YYYY-MM-DD, unique)
-- `protein`: Float (grams, default: 0.0)
-- `carbs`: Float (grams, default: 0.0)
-- `fat`: Float (grams, default: 0.0)
-
-## Development
-
-### Project Structure
-```
-health_protocol/
-├── main.py           # FastAPI application
-├── models.py         # SQLAlchemy models
-├── schemas.py        # Pydantic schemas
-├── database.py       # Database configuration
-├── requirements.txt  # Python dependencies
-└── README.md
-```
-
-### Database
-The API uses SQLite with a file named `health_protocol.db` created automatically on first run.
-
-## Extending the API
-
-To add new tables/tracking capabilities:
-
-1. Add model in `models.py`
-2. Create schemas in `schemas.py`
-3. Add endpoints in `main.py`
-4. Database tables are created automatically
-
-Example structure is already in place for macros - follow the same pattern for additional metrics.
+### Dashboard
+- `GET /api/v1/dashboard?date={date}` - Daily overview

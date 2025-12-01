@@ -4,34 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-
-# Virtual Environments
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.venv/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-health_protocol.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Environment variables
-.env
-.env.local
-
-# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -48,14 +20,26 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+# Alembic
+alembic/versions/*.pyc
