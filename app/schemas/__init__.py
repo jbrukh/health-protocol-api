@@ -16,24 +16,14 @@ from app.schemas.recipe import (
     RecipeResponse,
     RecipeIngredientCreate,
 )
-from app.schemas.supplement import (
-    SupplementCreate,
-    SupplementUpdate,
-    SupplementResponse,
-)
-from app.schemas.biomarker import (
-    BiomarkerCreate,
-    BiomarkerResponse,
-    BiomarkerComparison,
-)
-from app.schemas.exercise import (
-    ExerciseCreate,
-    ExerciseUpdate,
-    ExerciseResponse,
-)
 from app.schemas.target import (
     TargetCreate,
     TargetResponse,
+)
+from app.schemas.nutrition_label import (
+    NutritionLabelCreate,
+    NutritionLabelUpdate,
+    NutritionLabelResponse,
 )
 from app.schemas.dashboard import DashboardResponse
 
@@ -50,16 +40,10 @@ __all__ = [
     "RecipeUpdate",
     "RecipeResponse",
     "RecipeIngredientCreate",
-    "SupplementCreate",
-    "SupplementUpdate",
-    "SupplementResponse",
-    "BiomarkerCreate",
-    "BiomarkerResponse",
-    "BiomarkerComparison",
-    "ExerciseCreate",
-    "ExerciseUpdate",
-    "ExerciseResponse",
     "TargetCreate",
     "TargetResponse",
+    "NutritionLabelCreate",
+    "NutritionLabelUpdate",
+    "NutritionLabelResponse",
     "DashboardResponse",
 ]

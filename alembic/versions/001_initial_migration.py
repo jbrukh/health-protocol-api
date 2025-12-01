@@ -96,50 +96,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id')
     )
 
-    # Create supplements table
-    op.create_table(
-        'supplements',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(length=255), nullable=False),
-        sa.Column('brand', sa.String(length=255), nullable=True),
-        sa.Column('dosage', sa.String(length=100), nullable=True),
-        sa.Column('frequency', sa.String(length=100), nullable=True),
-        sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.PrimaryKeyConstraint('id')
-    )
-
-    # Create biomarkers table
-    op.create_table(
-        'biomarkers',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(length=255), nullable=False),
-        sa.Column('value', sa.Float(), nullable=False),
-        sa.Column('unit', sa.String(length=50), nullable=False),
-        sa.Column('measured_at', sa.Date(), nullable=False),
-        sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_biomarkers_name', 'biomarkers', ['name'], unique=False)
-    op.create_index('ix_biomarkers_measured_at', 'biomarkers', ['measured_at'], unique=False)
-
-    # Create exercises table
-    op.create_table(
-        'exercises',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('date', sa.Date(), nullable=False),
-        sa.Column('exercise_type', sa.String(length=100), nullable=False),
-        sa.Column('duration_minutes', sa.Integer(), nullable=True),
-        sa.Column('metadata_json', sa.JSON(), nullable=True),
-        sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_exercises_date', 'exercises', ['date'], unique=False)
-
     # Create targets table
     op.create_table(
         'targets',
@@ -154,12 +110,37 @@ def upgrade() -> None:
     op.create_index('ix_targets_name', 'targets', ['name'], unique=False)
     op.create_index('ix_targets_effective_from', 'targets', ['effective_from'], unique=False)
 
+    # Create nutrition_labels table
+    op.create_table(
+        'nutrition_labels',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('barcode', sa.String(length=50), nullable=True, unique=True),
+        sa.Column('product_name', sa.String(length=255), nullable=False),
+        sa.Column('brand', sa.String(length=255), nullable=True),
+        sa.Column('serving_size', sa.Float(), nullable=False),
+        sa.Column('serving_unit', sa.String(length=20), nullable=False),
+        sa.Column('servings_per_container', sa.Float(), nullable=True),
+        sa.Column('calories', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('protein_g', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('carbs_g', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('fat_g', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('fiber_g', sa.Float(), nullable=True),
+        sa.Column('sugar_g', sa.Float(), nullable=True),
+        sa.Column('sodium_mg', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('saturated_fat_g', sa.Float(), nullable=True),
+        sa.Column('cholesterol_mg', sa.Float(), nullable=True),
+        sa.Column('potassium_mg', sa.Float(), nullable=True),
+        sa.Column('notes', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_nutrition_labels_barcode', 'nutrition_labels', ['barcode'], unique=True)
+
 
 def downgrade() -> None:
+    op.drop_table('nutrition_labels')
     op.drop_table('targets')
-    op.drop_table('exercises')
-    op.drop_table('biomarkers')
-    op.drop_table('supplements')
     op.drop_table('recipe_ingredients')
     op.drop_table('recipes')
     op.drop_table('food_entries')

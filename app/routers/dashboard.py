@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import verify_api_key
 from app.database import get_db
-from app.models import DailyLog, FoodEntry, Exercise, Target
+from app.models import DailyLog, FoodEntry, Target
 from app.schemas import DailySummary, DashboardResponse
 from app.schemas.dashboard import TargetProgress
 
@@ -20,7 +20,7 @@ async def get_dashboard(
     db: AsyncSession = Depends(get_db),
     _: str = Depends(verify_api_key),
 ):
-    """Get daily overview including food, exercise, and progress vs targets."""
+    """Get daily overview including food and progress vs targets."""
     if dashboard_date is None:
         dashboard_date = date.today()
 
@@ -57,14 +57,6 @@ async def get_dashboard(
         total_calories=round(summary_row.total_calories, 2),
         entry_count=summary_row.entry_count,
     )
-
-    # Get exercises
-    exercise_result = await db.execute(
-        select(Exercise)
-        .where(Exercise.date == dashboard_date)
-        .order_by(Exercise.created_at)
-    )
-    exercises = exercise_result.scalars().all()
 
     # Get current targets and calculate progress
     subquery = (
@@ -112,6 +104,5 @@ async def get_dashboard(
         date=dashboard_date,
         food_summary=food_summary,
         food_entries=food_entries,
-        exercises=exercises,
         target_progress=target_progress,
     )

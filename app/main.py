@@ -6,11 +6,9 @@ from app.routers import (
     ingredients_router,
     food_router,
     recipes_router,
-    supplements_router,
-    biomarkers_router,
-    exercises_router,
     targets_router,
     dashboard_router,
+    nutrition_labels_router,
 )
 
 settings = get_settings()
@@ -22,8 +20,8 @@ if settings.openapi_server_url:
 
 app = FastAPI(
     title="Jake's Health Protocol API",
-    description="Health tracking API for food, supplements, biomarkers, and exercise logging. Designed for Custom GPT integration.",
-    version="2.0.0",
+    description="Health tracking API for food, nutrition labels, and recipes. Designed for Custom GPT integration.",
+    version="2.1.0",
     servers=servers if servers else None,
 )
 
@@ -42,17 +40,15 @@ API_PREFIX = "/api/v1"
 app.include_router(ingredients_router, prefix=API_PREFIX)
 app.include_router(food_router, prefix=API_PREFIX)
 app.include_router(recipes_router, prefix=API_PREFIX)
-app.include_router(supplements_router, prefix=API_PREFIX)
-app.include_router(biomarkers_router, prefix=API_PREFIX)
-app.include_router(exercises_router, prefix=API_PREFIX)
 app.include_router(targets_router, prefix=API_PREFIX)
 app.include_router(dashboard_router, prefix=API_PREFIX)
+app.include_router(nutrition_labels_router, prefix=API_PREFIX)
 
 
 @app.get("/", tags=["Health"], include_in_schema=False)
 async def root():
     """Health check endpoint."""
-    return {"status": "healthy", "version": "2.0.0"}
+    return {"status": "healthy", "version": "2.1.0"}
 
 
 @app.get("/health", tags=["Health"], include_in_schema=False)
@@ -61,5 +57,5 @@ async def health_check():
     return {
         "status": "healthy",
         "environment": settings.environment,
-        "version": "2.0.0",
+        "version": "2.1.0",
     }
