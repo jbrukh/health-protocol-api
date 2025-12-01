@@ -15,7 +15,12 @@ API_KEY = os.getenv("API_KEY")  # Set this in Railway environment variables
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # API URL configuration for OpenAPI schema
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+# Railway automatically provides RAILWAY_PUBLIC_DOMAIN
+railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_domain:
+    API_URL = f"https://{railway_domain}"
+else:
+    API_URL = "http://localhost:8000"
 
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
