@@ -64,7 +64,7 @@ def upgrade() -> None:
         sa.Column('fat_g', sa.Float(), nullable=False),
         sa.Column('sodium_mg', sa.Float(), nullable=False),
         sa.Column('calories', sa.Float(), nullable=False),
-        sa.Column('logged_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
         sa.ForeignKeyConstraint(['daily_log_id'], ['daily_logs.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['ingredient_id'], ['ingredients.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
