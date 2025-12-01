@@ -9,6 +9,7 @@ from app.routers import (
     targets_router,
     dashboard_router,
     nutrition_labels_router,
+    admin_router,
 )
 
 settings = get_settings()
@@ -43,6 +44,7 @@ app.include_router(recipes_router, prefix=API_PREFIX)
 app.include_router(targets_router, prefix=API_PREFIX)
 app.include_router(dashboard_router, prefix=API_PREFIX)
 app.include_router(nutrition_labels_router, prefix=API_PREFIX)
+app.include_router(admin_router, prefix=API_PREFIX)
 
 
 @app.get("/", tags=["Health"], include_in_schema=False)
