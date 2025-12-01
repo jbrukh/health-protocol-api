@@ -45,6 +45,7 @@ def upgrade() -> None:
         sa.Column('date', sa.Date(), nullable=False, unique=True),
         sa.Column('notes', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_daily_logs_date', 'daily_logs', ['date'], unique=True)
