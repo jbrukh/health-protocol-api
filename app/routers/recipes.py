@@ -174,7 +174,7 @@ async def update_recipe(
     return recipe_to_response(recipe)
 
 
-@router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
 async def delete_recipe(
     recipe_id: int,
     db: AsyncSession = Depends(get_db),

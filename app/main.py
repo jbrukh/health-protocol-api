@@ -49,13 +49,13 @@ app.include_router(targets_router, prefix=API_PREFIX)
 app.include_router(dashboard_router, prefix=API_PREFIX)
 
 
-@app.get("/", tags=["Health"])
+@app.get("/", tags=["Health"], include_in_schema=False)
 async def root():
     """Health check endpoint."""
     return {"status": "healthy", "version": "2.0.0"}
 
 
-@app.get("/health", tags=["Health"])
+@app.get("/health", tags=["Health"], include_in_schema=False)
 async def health_check():
     """Detailed health check."""
     return {

@@ -205,7 +205,7 @@ async def update_food_entry(
     return entry
 
 
-@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
 async def delete_food_entry(
     entry_id: int,
     db: AsyncSession = Depends(get_db),

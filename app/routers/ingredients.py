@@ -66,7 +66,7 @@ async def get_ingredient(
     return ingredient
 
 
-@router.patch("/{ingredient_id}", response_model=IngredientResponse)
+@router.patch("/{ingredient_id}", response_model=IngredientResponse, include_in_schema=False)
 async def update_ingredient(
     ingredient_id: int,
     data: IngredientUpdate,
@@ -90,7 +90,7 @@ async def update_ingredient(
     return ingredient
 
 
-@router.post("/{ingredient_id}/set-default", response_model=IngredientResponse)
+@router.post("/{ingredient_id}/set-default", response_model=IngredientResponse, include_in_schema=False)
 async def set_default_ingredient(
     ingredient_id: int,
     db: AsyncSession = Depends(get_db),

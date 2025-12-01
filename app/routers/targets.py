@@ -54,7 +54,7 @@ async def get_current_targets(
     return result.scalars().all()
 
 
-@router.get("/{name}/history", response_model=List[TargetResponse])
+@router.get("/{name}/history", response_model=List[TargetResponse], include_in_schema=False)
 async def get_target_history(
     name: str,
     db: AsyncSession = Depends(get_db),

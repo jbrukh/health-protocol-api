@@ -51,7 +51,7 @@ async def get_exercises(
     return result.scalars().all()
 
 
-@router.get("/{exercise_id}", response_model=ExerciseResponse)
+@router.get("/{exercise_id}", response_model=ExerciseResponse, include_in_schema=False)
 async def get_exercise(
     exercise_id: int,
     db: AsyncSession = Depends(get_db),
@@ -67,7 +67,7 @@ async def get_exercise(
     return exercise
 
 
-@router.patch("/{exercise_id}", response_model=ExerciseResponse)
+@router.patch("/{exercise_id}", response_model=ExerciseResponse, include_in_schema=False)
 async def update_exercise(
     exercise_id: int,
     data: ExerciseUpdate,
@@ -91,7 +91,7 @@ async def update_exercise(
     return exercise
 
 
-@router.delete("/{exercise_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{exercise_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
 async def delete_exercise(
     exercise_id: int,
     db: AsyncSession = Depends(get_db),

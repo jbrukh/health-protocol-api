@@ -39,7 +39,7 @@ async def list_active_supplements(
     return result.scalars().all()
 
 
-@router.get("/all", response_model=List[SupplementResponse])
+@router.get("/all", response_model=List[SupplementResponse], include_in_schema=False)
 async def list_all_supplements(
     db: AsyncSession = Depends(get_db),
     _: str = Depends(verify_api_key),
@@ -91,7 +91,7 @@ async def update_supplement(
     return supplement
 
 
-@router.delete("/{supplement_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{supplement_id}", status_code=status.HTTP_204_NO_CONTENT, include_in_schema=False)
 async def deactivate_supplement(
     supplement_id: int,
     db: AsyncSession = Depends(get_db),
