@@ -1,12 +1,36 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import date
 from typing import List
+import os
 
 import models
 import schemas
 from database import engine, get_db
+
+# API Key configuration
+API_KEY = os.getenv("API_KEY")  # Set this in Railway environment variables
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    """
+    Verify API key if one is configured.
+    If no API_KEY environment variable is set, allows all requests (development mode).
+    """
+    if API_KEY is None:
+        # No API key configured - allow request (useful for local development)
+        return None
+
+    if api_key is None or api_key != API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid or missing API key. Provide X-API-Key header."
+        )
+    return api_key
+
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -38,7 +62,9 @@ def read_root():
 
 @app.post("/macros/", response_model=schemas.MacroEntry, tags=["Macros"])
 def create_or_update_macro_entry(
-    entry: schemas.MacroEntryCreate, db: Session = Depends(get_db)
+    entry: schemas.MacroEntryCreate,
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Create or update a macro entry for a specific date.
@@ -64,7 +90,12 @@ def create_or_update_macro_entry(
 
 
 @app.get("/macros/", response_model=List[schemas.MacroEntry], tags=["Macros"])
-def get_all_macro_entries(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_all_macro_entries(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
+):
     """
     Get all macro entries, ordered by date (most recent first).
     """
@@ -75,7 +106,11 @@ def get_all_macro_entries(skip: int = 0, limit: int = 100, db: Session = Depends
 
 
 @app.get("/macros/{entry_date}", response_model=schemas.MacroEntry, tags=["Macros"])
-def get_macro_entry(entry_date: date, db: Session = Depends(get_db)):
+def get_macro_entry(
+    entry_date: date,
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
+):
     """
     Get macro entry for a specific date (format: YYYY-MM-DD).
     """
@@ -93,7 +128,8 @@ def get_macro_entry(entry_date: date, db: Session = Depends(get_db)):
 def update_macro_entry(
     entry_date: date,
     entry_update: schemas.MacroEntryUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Partially update a macro entry for a specific date.
@@ -119,7 +155,8 @@ def update_macro_entry(
 def add_to_macro_entry(
     entry_date: date,
     entry_update: schemas.MacroEntryUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
 ):
     """
     Add values to an existing macro entry (incremental update).
@@ -153,7 +190,11 @@ def add_to_macro_entry(
 
 
 @app.delete("/macros/{entry_date}", tags=["Macros"])
-def delete_macro_entry(entry_date: date, db: Session = Depends(get_db)):
+def delete_macro_entry(
+    entry_date: date,
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
+):
     """
     Delete a macro entry for a specific date.
     """
@@ -170,7 +211,11 @@ def delete_macro_entry(entry_date: date, db: Session = Depends(get_db)):
 
 
 @app.get("/macros/{entry_date}/summary", tags=["Macros"])
-def get_macro_summary(entry_date: date, db: Session = Depends(get_db)):
+def get_macro_summary(
+    entry_date: date,
+    db: Session = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
+):
     """
     Get macro entry with calculated totals (calories, etc.).
     """
