@@ -9,16 +9,21 @@ This skill allows you to interact with a personal health tracking API for food, 
 
 ## Configuration Required
 
-Before using this skill, ensure these environment variables are set:
-- `HEALTH_API_URL`: Your deployed API URL (e.g., `https://health-tracker-api-production.up.railway.app`)
-- `HEALTH_API_TOKEN`: Your API authentication token
+Credentials are stored in `~/.health-api-credentials.json`:
+```json
+{
+  "health_api_url": "https://your-app.up.railway.app",
+  "health_api_token": "your-api-token"
+}
+```
 
 ## Making API Requests
 
 All requests to the Health Tracker API must:
-1. Use the base URL from `HEALTH_API_URL`
-2. Include the Authorization header: `Authorization: Bearer <HEALTH_API_TOKEN>`
-3. Use JSON content type for POST/PUT requests
+1. Read credentials from `~/.health-api-credentials.json`
+2. Use the base URL from `health_api_url`
+3. Include the Authorization header: `Authorization: Bearer <health_api_token>`
+4. Use JSON content type for POST/PUT requests
 
 ## Quick Reference
 
