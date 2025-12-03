@@ -28,6 +28,10 @@ Load credentials from `skill/health-tracker-tokens.json` (relative to project ro
 | "I walked 3 miles" | POST /exercises |
 | "What recipes do I have?" | GET /recipes |
 | "Delete breakfast from today" | DELETE /foods/by-marker |
+| "What supplements should I take?" | GET /supplements/schedule |
+| "Add vitamin D to my supplements" | POST /supplements |
+| "What phase am I in?" | GET /phases/active |
+| "Start a cutting phase" | POST /phases |
 
 ## API Endpoints
 
@@ -139,9 +143,69 @@ Types: walk, run, bike, swim, strength, yoga, other
 }
 ```
 
+### Supplements
+
+**POST /supplements** - Create a supplement
+```json
+{
+  "name": "Vitamin D3",
+  "dosage": "5000 IU",
+  "purpose": "Vitamin D supplementation",
+  "time_of_day": "morning",
+  "with_food": true,
+  "notes": "Take with fatty meal",
+  "start_date": "2025-01-15",
+  "end_date": null
+}
+```
+- `time_of_day`: morning, midday, afternoon, evening, bedtime
+
+**GET /supplements** - List all supplements
+- Query params: `active=true|false`, `time_of_day=morning|midday|afternoon|evening|bedtime`
+
+**GET /supplements/active** - Get currently active supplements
+**GET /supplements/schedule** - Today's supplement schedule by time of day
+**GET /supplements/history?start_date=2025-01-01&end_date=2025-01-31** - Supplements active during range
+**GET /supplements/{id}** - Get single supplement
+**PUT /supplements/{id}** - Update supplement
+**DELETE /supplements/{id}** - Delete supplement
+
+### Phases
+
+**POST /phases** - Create a health phase
+```json
+{
+  "name": "Cutting Phase",
+  "description": "Caloric deficit for fat loss",
+  "start_date": "2025-01-15",
+  "end_date": "2025-02-15",
+  "is_recurring": false,
+  "recurrence_interval_days": null
+}
+```
+
+**GET /phases** - List all phases
+- Query params: `active=true|false`, `include_past=true|false`
+
+**GET /phases/active** - Get active phases + upcoming (next 7 days)
+- Returns `active_phases` (currently running) and `upcoming_phases` (starting soon)
+- Includes `days_remaining` for active, `days_until_start` for upcoming
+
+**GET /phases/{id}** - Get single phase
+**PUT /phases/{id}** - Update phase
+**DELETE /phases/{id}** - Delete phase
+
+### Admin
+
+**DELETE /admin/clear-supplements** - Clear all supplements
+**DELETE /admin/clear-phases** - Clear all phases
+**DELETE /admin/clear-all** - Clear everything except profile
+
 ## Usage Notes
 
 - Always use today's date in YYYY-MM-DD format unless user specifies otherwise
 - Use meaningful markers like "breakfast_eggs", "lunch_salad", "dinner_chicken"
 - When logging food, estimate macros if user doesn't provide them
 - After logging, offer to check remaining macros
+- For supplements, check /supplements/schedule to show the user what to take today
+- For phases, use /phases/active to show current protocols and what's coming up
