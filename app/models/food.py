@@ -1,13 +1,15 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel
 
 
-class IngredientCreate(BaseModel):
+class FoodCreate(BaseModel):
+    date: date
+    marker: str
     name: str
-    default_amount: float
-    default_unit: str
+    amount: float
+    unit: str
     calories: int
     protein_g: float
     carbs_g: float
@@ -15,23 +17,35 @@ class IngredientCreate(BaseModel):
     sodium_mg: int = 0
 
 
-class IngredientResponse(BaseModel):
+class FoodFromRecipe(BaseModel):
+    recipe_id: int
+    date: date
+    marker: str
+    scale: float = 1.0
+
+
+class FoodResponse(BaseModel):
     id: int
+    date: date
+    marker: str
     name: str
-    default_amount: float
-    default_unit: str
+    amount: float
+    unit: str
     calories: int
     protein_g: float
     carbs_g: float
     fats_g: float
     sodium_mg: int
+    ingredient_id: Optional[int] = None
+    recipe_id: Optional[int] = None
     created_at: datetime
 
 
-class IngredientUpdate(BaseModel):
+class FoodUpdate(BaseModel):
+    marker: Optional[str] = None
     name: Optional[str] = None
-    default_amount: Optional[float] = None
-    default_unit: Optional[str] = None
+    amount: Optional[float] = None
+    unit: Optional[str] = None
     calories: Optional[int] = None
     protein_g: Optional[float] = None
     carbs_g: Optional[float] = None

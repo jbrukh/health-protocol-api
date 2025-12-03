@@ -1,43 +1,55 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 
-from app.auth import verify_api_key
+from app.auth import verify_token
 from app.database import get_db
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
-
-ALLOWED_TABLES = [
-    "food_entries",
-    "daily_logs",
-    "ingredients",
-    "recipes",
-    "recipe_ingredients",
-    "targets",
-    "nutrition_labels",
-]
+router = APIRouter()
 
 
-@router.post("/clear", include_in_schema=False)
-async def clear_data(
-    table: Optional[str] = Query(None, description="Table to clear (omit to clear all)"),
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
-    """Clear data from a specific table or all tables."""
-    if table:
-        if table not in ALLOWED_TABLES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid table. Allowed: {ALLOWED_TABLES}"
-            )
-        await db.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+@router.delete("/clear-foods", status_code=200)
+async def clear_foods(_: str = Depends(verify_token)) -> dict:
+    """Clear all food entries."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM foods")
         await db.commit()
-        return {"message": f"Cleared table: {table}"}
-    else:
-        # Clear all tables in a single statement (CASCADE handles FK deps)
-        tables_str = ", ".join(ALLOWED_TABLES)
-        await db.execute(text(f"TRUNCATE TABLE {tables_str} CASCADE"))
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-exercises", status_code=200)
+async def clear_exercises(_: str = Depends(verify_token)) -> dict:
+    """Clear all exercise entries."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM exercises")
         await db.commit()
-        return {"message": "Cleared all tables", "tables": ALLOWED_TABLES}
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-snapshots", status_code=200)
+async def clear_snapshots(_: str = Depends(verify_token)) -> dict:
+    """Clear all daily snapshots."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM daily_snapshots")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-body", status_code=200)
+async def clear_body(_: str = Depends(verify_token)) -> dict:
+    """Clear all body measurements."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM body_measurements")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-all", status_code=200)
+async def clear_all(_: str = Depends(verify_token)) -> dict:
+    """Clear everything except profile."""
+    async with get_db() as db:
+        tables = ["foods", "exercises", "daily_snapshots", "body_measurements", "recipe_items", "recipes", "ingredients"]
+        total = 0
+        for table in tables:
+            cursor = await db.execute(f"DELETE FROM {table}")
+            total += cursor.rowcount
+        await db.commit()
+        return {"deleted": total}

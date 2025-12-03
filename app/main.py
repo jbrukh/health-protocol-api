@@ -1,32 +1,25 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import get_settings
-from app.routers import (
-    ingredients_router,
-    food_router,
-    recipes_router,
-    targets_router,
-    dashboard_router,
-    nutrition_labels_router,
-    admin_router,
-)
+from app.database import init_db
+from app.routers import profile, ingredients, recipes, foods, macros, body, exercises, admin
 
-settings = get_settings()
 
-# Configure OpenAPI servers for Custom GPT integration
-servers = []
-if settings.openapi_server_url:
-    servers.append({"url": settings.openapi_server_url, "description": "Production server"})
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
 
 app = FastAPI(
-    title="Jake's Health Protocol API",
-    description="Health tracking API for food, nutrition labels, and recipes. Designed for Custom GPT integration.",
-    version="2.1.0",
-    servers=servers if servers else None,
+    title="Health Tracker API",
+    description="A lightweight REST API for food, macro, exercise, and body measurement tracking.",
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
-# CORS middleware for GPT integration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,29 +28,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routers under /api/v1 prefix
-API_PREFIX = "/api/v1"
-
-app.include_router(ingredients_router, prefix=API_PREFIX)
-app.include_router(food_router, prefix=API_PREFIX)
-app.include_router(recipes_router, prefix=API_PREFIX)
-app.include_router(targets_router, prefix=API_PREFIX)
-app.include_router(dashboard_router, prefix=API_PREFIX)
-app.include_router(nutrition_labels_router, prefix=API_PREFIX)
-app.include_router(admin_router, prefix=API_PREFIX)
+app.include_router(profile.router, prefix="/profile", tags=["Profile"])
+app.include_router(ingredients.router, prefix="/ingredients", tags=["Ingredients"])
+app.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
+app.include_router(foods.router, prefix="/foods", tags=["Foods"])
+app.include_router(macros.router, prefix="/macros", tags=["Macros"])
+app.include_router(body.router, prefix="/body", tags=["Body Measurements"])
+app.include_router(exercises.router, prefix="/exercises", tags=["Exercises"])
+app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 
 
-@app.get("/", tags=["Health"], include_in_schema=False)
-async def root():
-    """Health check endpoint."""
-    return {"status": "healthy", "version": "2.1.0"}
-
-
-@app.get("/health", tags=["Health"], include_in_schema=False)
+@app.get("/health")
 async def health_check():
-    """Detailed health check."""
-    return {
-        "status": "healthy",
-        "environment": settings.environment,
-        "version": "2.1.0",
-    }
+    """Health check endpoint (no auth required)."""
+    return {"status": "healthy"}

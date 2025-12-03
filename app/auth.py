@@ -1,17 +1,18 @@
-from fastapi import HTTPException, Security, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from app.config import get_settings
+
+from app.config import settings
 
 security = HTTPBearer()
 
 
-async def verify_api_key(
-    credentials: HTTPAuthorizationCredentials = Security(security),
+async def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
-    settings = get_settings()
-    if credentials.credentials != settings.api_key:
+    """Verify the API token from the Authorization header."""
+    if credentials.credentials != settings.api_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
+            detail="Invalid API token",
         )
     return credentials.credentials

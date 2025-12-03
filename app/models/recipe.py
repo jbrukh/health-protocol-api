@@ -1,37 +1,62 @@
-from typing import Optional, List, TYPE_CHECKING
-import datetime as dt
-from sqlalchemy import ForeignKey, String, Float, Text, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
+from datetime import datetime
+from typing import Optional
 
-if TYPE_CHECKING:
-    from app.models.ingredient import Ingredient
+from pydantic import BaseModel
 
 
-class Recipe(Base):
-    __tablename__ = "recipes"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
-    updated_at: Mapped[dt.datetime] = mapped_column(
-        DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow
-    )
-
-    ingredients: Mapped[List["RecipeIngredient"]] = relationship(
-        "RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan"
-    )
+class RecipeItemCreate(BaseModel):
+    ingredient_id: int
+    amount: float
+    unit: str
 
 
-class RecipeIngredient(Base):
-    __tablename__ = "recipe_ingredients"
+class RecipeItemResponse(BaseModel):
+    id: int
+    ingredient_id: int
+    ingredient_name: str
+    amount: float
+    unit: str
+    calories: int
+    protein_g: float
+    carbs_g: float
+    fats_g: float
+    sodium_mg: int
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), index=True)
-    ingredient_id: Mapped[int] = mapped_column(ForeignKey("ingredients.id"))
-    quantity: Mapped[float] = mapped_column(Float)
-    unit: Mapped[str] = mapped_column(String(20))
 
-    recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="ingredients")
-    ingredient: Mapped["Ingredient"] = relationship("Ingredient")
+class RecipeTotals(BaseModel):
+    calories: int
+    protein_g: float
+    carbs_g: float
+    fats_g: float
+    sodium_mg: int
+
+
+class RecipeCreate(BaseModel):
+    name: str
+    items: list[RecipeItemCreate] = []
+
+
+class RecipeResponse(BaseModel):
+    id: int
+    name: str
+    items: list[RecipeItemResponse] = []
+    totals: RecipeTotals
+    created_at: datetime
+    updated_at: datetime
+
+
+class RecipeListResponse(BaseModel):
+    id: int
+    name: str
+    totals: RecipeTotals
+    created_at: datetime
+    updated_at: datetime
+
+
+class RecipeUpdate(BaseModel):
+    name: Optional[str] = None
+
+
+class RecipeItemUpdate(BaseModel):
+    amount: Optional[float] = None
+    unit: Optional[str] = None

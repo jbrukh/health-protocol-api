@@ -1,120 +1,60 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, Query
+from typing import Optional
 
-from app.auth import verify_api_key
-from app.database import get_db
-from app.models import Ingredient
-from app.schemas import IngredientCreate, IngredientUpdate, IngredientResponse
+from app.auth import verify_token
+from app.models.ingredient import IngredientCreate, IngredientResponse, IngredientUpdate
+from app.services import ingredient_service
 
-router = APIRouter(prefix="/ingredients", tags=["Ingredients"])
+router = APIRouter()
 
 
-@router.post("", response_model=IngredientResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=IngredientResponse, status_code=201)
 async def create_ingredient(
     data: IngredientCreate,
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
-    """Add a new ingredient with nutrition facts."""
-    ingredient = Ingredient(**data.model_dump())
-    db.add(ingredient)
-    await db.flush()
-    await db.refresh(ingredient)
-    return ingredient
+    _: str = Depends(verify_token),
+) -> IngredientResponse:
+    """Create a new ingredient."""
+    return await ingredient_service.create_ingredient(data)
 
 
-@router.get("", response_model=List[IngredientResponse])
-async def list_ingredients(
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
+@router.get("", response_model=list[IngredientResponse])
+async def list_ingredients(_: str = Depends(verify_token)) -> list[IngredientResponse]:
     """List all ingredients."""
-    result = await db.execute(select(Ingredient).order_by(Ingredient.name))
-    return result.scalars().all()
+    return await ingredient_service.list_ingredients()
 
 
-@router.get("/search", response_model=List[IngredientResponse])
+@router.get("/search", response_model=list[IngredientResponse])
 async def search_ingredients(
-    q: str = Query(..., min_length=1, description="Search query"),
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
+    q: str = Query(..., description="Search query"),
+    _: str = Depends(verify_token),
+) -> list[IngredientResponse]:
     """Search ingredients by name."""
-    result = await db.execute(
-        select(Ingredient)
-        .where(Ingredient.name.ilike(f"%{q}%"))
-        .order_by(Ingredient.is_default.desc(), Ingredient.name)
-    )
-    return result.scalars().all()
+    return await ingredient_service.search_ingredients(q)
 
 
 @router.get("/{ingredient_id}", response_model=IngredientResponse)
 async def get_ingredient(
     ingredient_id: int,
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
-    """Get a specific ingredient."""
-    result = await db.execute(
-        select(Ingredient).where(Ingredient.id == ingredient_id)
-    )
-    ingredient = result.scalar_one_or_none()
-    if not ingredient:
-        raise HTTPException(status_code=404, detail="Ingredient not found")
-    return ingredient
+    _: str = Depends(verify_token),
+) -> IngredientResponse:
+    """Get an ingredient by ID."""
+    return await ingredient_service.get_ingredient(ingredient_id)
 
 
-@router.patch("/{ingredient_id}", response_model=IngredientResponse, include_in_schema=False)
+@router.put("/{ingredient_id}", response_model=IngredientResponse)
 async def update_ingredient(
     ingredient_id: int,
     data: IngredientUpdate,
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
+    _: str = Depends(verify_token),
+) -> IngredientResponse:
     """Update an ingredient."""
-    result = await db.execute(
-        select(Ingredient).where(Ingredient.id == ingredient_id)
-    )
-    ingredient = result.scalar_one_or_none()
-    if not ingredient:
-        raise HTTPException(status_code=404, detail="Ingredient not found")
-
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(ingredient, key, value)
-
-    await db.flush()
-    await db.refresh(ingredient)
-    return ingredient
+    return await ingredient_service.update_ingredient(ingredient_id, data)
 
 
-@router.post("/{ingredient_id}/set-default", response_model=IngredientResponse, include_in_schema=False)
-async def set_default_ingredient(
+@router.delete("/{ingredient_id}", status_code=204)
+async def delete_ingredient(
     ingredient_id: int,
-    db: AsyncSession = Depends(get_db),
-    _: str = Depends(verify_api_key),
-):
-    """Set an ingredient as the default for its generic name."""
-    result = await db.execute(
-        select(Ingredient).where(Ingredient.id == ingredient_id)
-    )
-    ingredient = result.scalar_one_or_none()
-    if not ingredient:
-        raise HTTPException(status_code=404, detail="Ingredient not found")
-
-    # Clear default status from other ingredients with similar names
-    similar = await db.execute(
-        select(Ingredient).where(
-            Ingredient.name.ilike(f"%{ingredient.name.split()[0]}%"),
-            Ingredient.id != ingredient_id,
-        )
-    )
-    for other in similar.scalars().all():
-        other.is_default = False
-
-    ingredient.is_default = True
-    await db.flush()
-    await db.refresh(ingredient)
-    return ingredient
+    _: str = Depends(verify_token),
+) -> None:
+    """Delete an ingredient."""
+    await ingredient_service.delete_ingredient(ingredient_id)

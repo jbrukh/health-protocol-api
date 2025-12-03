@@ -1,0 +1,126 @@
+import pytest
+from datetime import date
+
+
+@pytest.mark.asyncio
+async def test_create_measurement(client, auth_headers):
+    """Test create body measurement."""
+    today = date.today().isoformat()
+    data = {
+        "date": today,
+        "time": "07:30:00",
+        "weight_lbs": 185.5,
+        "waist_cm": 86.0,
+    }
+    response = await client.post("/body", json=data, headers=auth_headers)
+    assert response.status_code == 201
+    result = response.json()
+    assert result["weight_lbs"] == 185.5
+    assert result["waist_cm"] == 86.0
+
+
+@pytest.mark.asyncio
+async def test_create_weight_only_measurement(client, auth_headers):
+    """Test create measurement with weight only."""
+    today = date.today().isoformat()
+    data = {
+        "date": today,
+        "time": "08:00:00",
+        "weight_lbs": 186.0,
+    }
+    response = await client.post("/body", json=data, headers=auth_headers)
+    assert response.status_code == 201
+    result = response.json()
+    assert result["weight_lbs"] == 186.0
+    assert result["waist_cm"] is None
+
+
+@pytest.mark.asyncio
+async def test_create_waist_only_measurement(client, auth_headers):
+    """Test create measurement with waist only."""
+    today = date.today().isoformat()
+    data = {
+        "date": today,
+        "time": "08:30:00",
+        "waist_cm": 85.0,
+    }
+    response = await client.post("/body", json=data, headers=auth_headers)
+    assert response.status_code == 201
+    result = response.json()
+    assert result["weight_lbs"] is None
+    assert result["waist_cm"] == 85.0
+
+
+@pytest.mark.asyncio
+async def test_create_measurement_requires_at_least_one(client, auth_headers):
+    """Test measurement requires at least one value."""
+    today = date.today().isoformat()
+    data = {
+        "date": today,
+        "time": "09:00:00",
+    }
+    response = await client.post("/body", json=data, headers=auth_headers)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_get_measurements_by_date(client, auth_headers):
+    """Test get measurements for a date."""
+    today = date.today().isoformat()
+
+    await client.post("/body", json={
+        "date": today, "time": "07:00:00", "weight_lbs": 185.0,
+    }, headers=auth_headers)
+    await client.post("/body", json={
+        "date": today, "time": "19:00:00", "weight_lbs": 186.0,
+    }, headers=auth_headers)
+
+    response = await client.get(f"/body?date={today}", headers=auth_headers)
+    assert response.status_code == 200
+    measurements = response.json()
+    assert len(measurements) >= 2
+
+
+@pytest.mark.asyncio
+async def test_get_latest_measurement(client, auth_headers):
+    """Test get most recent measurement."""
+    today = date.today().isoformat()
+    await client.post("/body", json={
+        "date": today, "time": "23:59:00", "weight_lbs": 184.0,
+    }, headers=auth_headers)
+
+    response = await client.get("/body/latest", headers=auth_headers)
+    assert response.status_code == 200
+    result = response.json()
+    assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_update_measurement(client, auth_headers):
+    """Test update measurement."""
+    today = date.today().isoformat()
+    response = await client.post("/body", json={
+        "date": today, "time": "10:00:00", "weight_lbs": 185.0,
+    }, headers=auth_headers)
+    measurement_id = response.json()["id"]
+
+    response = await client.put(
+        f"/body/{measurement_id}",
+        json={"weight_lbs": 184.5},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["weight_lbs"] == 184.5
+
+
+@pytest.mark.asyncio
+async def test_delete_measurement(client, auth_headers):
+    """Test delete measurement."""
+    today = date.today().isoformat()
+    response = await client.post("/body", json={
+        "date": today, "time": "11:00:00", "weight_lbs": 185.0,
+    }, headers=auth_headers)
+    measurement_id = response.json()["id"]
+
+    response = await client.delete(f"/body/{measurement_id}", headers=auth_headers)
+    assert response.status_code == 204
