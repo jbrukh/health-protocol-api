@@ -41,5 +41,10 @@ env/
 .coverage
 htmlcov/
 
-# Alembic
-alembic/versions/*.pyc
+# SQLite database
+*.db
+data/
+test_data/
+
+# macOS
+.DS_Store
