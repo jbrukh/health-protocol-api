@@ -109,6 +109,39 @@ CREATE TABLE IF NOT EXISTS exercises (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exercises_date ON exercises(date);
+
+-- Supplements
+CREATE TABLE IF NOT EXISTS supplements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    dosage TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    time_of_day TEXT NOT NULL CHECK (time_of_day IN ('morning', 'midday', 'afternoon', 'evening', 'bedtime')),
+    with_food BOOLEAN NOT NULL DEFAULT 0,
+    notes TEXT,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplements_dates ON supplements(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_supplements_time ON supplements(time_of_day);
+
+-- Phases
+CREATE TABLE IF NOT EXISTS phases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_recurring BOOLEAN NOT NULL DEFAULT 0,
+    recurrence_interval_days INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_phases_dates ON phases(start_date, end_date);
 """
 
 

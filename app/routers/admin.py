@@ -42,11 +42,29 @@ async def clear_body(_: str = Depends(verify_token)) -> dict:
         return {"deleted": cursor.rowcount}
 
 
+@router.delete("/clear-supplements", status_code=200)
+async def clear_supplements(_: str = Depends(verify_token)) -> dict:
+    """Clear all supplements."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM supplements")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-phases", status_code=200)
+async def clear_phases(_: str = Depends(verify_token)) -> dict:
+    """Clear all phases."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM phases")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
 @router.delete("/clear-all", status_code=200)
 async def clear_all(_: str = Depends(verify_token)) -> dict:
     """Clear everything except profile."""
     async with get_db() as db:
-        tables = ["foods", "exercises", "daily_snapshots", "body_measurements", "recipe_items", "recipes", "ingredients"]
+        tables = ["foods", "exercises", "daily_snapshots", "body_measurements", "recipe_items", "recipes", "ingredients", "supplements", "phases"]
         total = 0
         for table in tables:
             cursor = await db.execute(f"DELETE FROM {table}")
