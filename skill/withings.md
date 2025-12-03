@@ -9,7 +9,7 @@ Access health data from Withings devices (smart scales, blood pressure monitors,
 
 ## Credentials
 
-All Withings credentials are in `skill/withings_tokens.json` (relative to project root):
+All Withings credentials are in `skill/withings-tokens.json` (relative to project root):
 ```json
 {
   "withings_client_id": "your-client-id",
@@ -21,7 +21,7 @@ All Withings credentials are in `skill/withings_tokens.json` (relative to projec
 
 ## Making API Requests
 
-1. Read the `access_token` from `skill/withings_tokens.json`
+1. Read the `access_token` from `skill/withings-tokens.json`
 2. Include header: `Authorization: Bearer <access_token>`
 3. All Withings API endpoints use POST requests with form data
 
@@ -30,10 +30,10 @@ All Withings credentials are in `skill/withings_tokens.json` (relative to projec
 Access tokens expire after 3 hours. If you get a 401 or expired token error:
 
 ```bash
-# Read all credentials from skill/withings_tokens.json
-CLIENT_ID=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['withings_client_id'])")
-CLIENT_SECRET=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['withings_client_secret'])")
-REFRESH_TOKEN=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['refresh_token'])")
+# Read all credentials from skill/withings-tokens.json
+CLIENT_ID=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['withings_client_id'])")
+CLIENT_SECRET=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['withings_client_secret'])")
+REFRESH_TOKEN=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['refresh_token'])")
 
 curl -X POST "https://wbsapi.withings.net/v2/oauth2" \
   -d "action=requesttoken" \
@@ -43,7 +43,7 @@ curl -X POST "https://wbsapi.withings.net/v2/oauth2" \
   -d "refresh_token=$REFRESH_TOKEN"
 ```
 
-Update `skill/withings_tokens.json` with the new `access_token` and `refresh_token` from the response.
+Update `skill/withings-tokens.json` with the new `access_token` and `refresh_token` from the response.
 
 ## API Endpoints
 
@@ -52,7 +52,7 @@ Update `skill/withings_tokens.json` with the new `access_token` and `refresh_tok
 Fetches weight, body composition, blood pressure, heart rate.
 
 ```bash
-ACCESS_TOKEN=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ACCESS_TOKEN=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 END_DATE=$(date +%s)
 START_DATE=$((END_DATE - 604800))  # 7 days ago
 
@@ -87,7 +87,7 @@ Values are encoded as `value * 10^unit`. Example: `{"value": 10569, "unit": -2}`
 Fetches steps, calories, distance.
 
 ```bash
-ACCESS_TOKEN=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ACCESS_TOKEN=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 START_DATE=$(date -v-7d +%Y-%m-%d)  # 7 days ago (macOS)
 END_DATE=$(date +%Y-%m-%d)
 
@@ -110,7 +110,7 @@ curl -X POST "https://wbsapi.withings.net/v2/measure" \
 ### Get Sleep Data
 
 ```bash
-ACCESS_TOKEN=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ACCESS_TOKEN=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 START_DATE=$(date -v-7d +%Y-%m-%d)
 END_DATE=$(date +%Y-%m-%d)
 
@@ -145,7 +145,7 @@ curl -X POST "https://wbsapi.withings.net/v2/sleep" \
 
 ```bash
 # One-liner to get latest weight
-ACCESS_TOKEN=$(cat skill/withings_tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ACCESS_TOKEN=$(cat skill/withings-tokens.json | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 curl -s -X POST "https://wbsapi.withings.net/measure" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -d "action=getmeas" \
