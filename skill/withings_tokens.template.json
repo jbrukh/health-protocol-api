@@ -1,0 +1,6 @@
+{
+  "withings_client_id": "your-client-id",
+  "withings_client_secret": "your-client-secret",
+  "access_token": "your-access-token",
+  "refresh_token": "your-refresh-token"
+}

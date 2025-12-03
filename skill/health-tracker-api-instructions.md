@@ -4,7 +4,7 @@ You have access to a personal health tracking API. When the user asks about logg
 
 ## API Configuration
 
-Load credentials from `~/.health-api-credentials.json`:
+Load credentials from `skill/health_tracker_tokens.json` (relative to project root):
 ```json
 {
   "health_api_url": "https://your-api-url.up.railway.app",

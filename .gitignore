@@ -36,10 +36,12 @@ env/
 .env
 .env.local
 
-# Credentials (NEVER commit actual credentials)
+# Credentials and tokens (NEVER commit actual credentials)
 credentials.json
 *credentials*.json
 !credentials.template.json
+skill/*_tokens.json
+!skill/*_tokens.template.json
 
 # Testing
 .pytest_cache/
