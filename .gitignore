@@ -40,8 +40,8 @@ env/
 credentials.json
 *credentials*.json
 !credentials.template.json
-skill/*-tokens.json
-!skill/*-tokens.template.json
+*-tokens.json
+!*-tokens.template.json
 
 # Testing
 .pytest_cache/
