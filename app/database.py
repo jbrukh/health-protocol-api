@@ -110,11 +110,12 @@ CREATE TABLE IF NOT EXISTS exercises (
 
 CREATE INDEX IF NOT EXISTS idx_exercises_date ON exercises(date);
 
--- Supplements
+-- Supplements (v2: dosage split into amount + unit)
 CREATE TABLE IF NOT EXISTS supplements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    dosage TEXT NOT NULL,
+    dosage_amount REAL NOT NULL,
+    dosage_unit TEXT NOT NULL,
     purpose TEXT NOT NULL,
     time_of_day TEXT NOT NULL CHECK (time_of_day IN ('morning', 'midday', 'afternoon', 'evening', 'bedtime')),
     with_food BOOLEAN NOT NULL DEFAULT 0,
@@ -152,6 +153,22 @@ async def init_db(db_path: str | None = None):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
     async with aiosqlite.connect(path) as db:
+        # Check if supplements table needs migration (v1 -> v2)
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='supplements'")
+        table_exists = await cursor.fetchone()
+
+        if table_exists:
+            # Check if old schema (has 'dosage' column instead of 'dosage_amount')
+            cursor = await db.execute("PRAGMA table_info(supplements)")
+            columns = await cursor.fetchall()
+            column_names = [col[1] for col in columns]
+
+            if 'dosage' in column_names and 'dosage_amount' not in column_names:
+                # Migrate: drop old table and let new schema create it
+                # Note: This loses data, but supplements feature is new
+                await db.execute("DROP TABLE supplements")
+                await db.commit()
+
         await db.executescript(SCHEMA)
         await db.commit()
 

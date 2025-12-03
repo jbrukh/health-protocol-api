@@ -35,7 +35,8 @@ def _row_to_response(row) -> SupplementResponse:
     return SupplementResponse(
         id=row["id"],
         name=row["name"],
-        dosage=row["dosage"],
+        dosage_amount=row["dosage_amount"],
+        dosage_unit=row["dosage_unit"],
         purpose=row["purpose"],
         time_of_day=TimeOfDay(row["time_of_day"]),
         with_food=bool(row["with_food"]),
@@ -54,12 +55,13 @@ async def create_supplement(data: SupplementCreate, db_path: str | None = None) 
         now = datetime.now().isoformat()
         cursor = await db.execute(
             """
-            INSERT INTO supplements (name, dosage, purpose, time_of_day, with_food, notes, start_date, end_date, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO supplements (name, dosage_amount, dosage_unit, purpose, time_of_day, with_food, notes, start_date, end_date, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 data.name,
-                data.dosage,
+                data.dosage_amount,
+                data.dosage_unit,
                 data.purpose,
                 data.time_of_day.value,
                 data.with_food,
@@ -147,7 +149,8 @@ async def get_supplement_schedule(db_path: str | None = None) -> SupplementSched
         item = SupplementScheduleItem(
             id=supp.id,
             name=supp.name,
-            dosage=supp.dosage,
+            dosage_amount=supp.dosage_amount,
+            dosage_unit=supp.dosage_unit,
             with_food=supp.with_food,
             notes=supp.notes,
         )
@@ -204,7 +207,8 @@ async def get_supplement_history(
                 SupplementHistoryItem(
                     id=row["id"],
                     name=row["name"],
-                    dosage=row["dosage"],
+                    dosage_amount=row["dosage_amount"],
+                    dosage_unit=row["dosage_unit"],
                     purpose=row["purpose"],
                     time_of_day=TimeOfDay(row["time_of_day"]),
                     with_food=bool(row["with_food"]),

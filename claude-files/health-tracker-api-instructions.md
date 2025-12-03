@@ -149,7 +149,8 @@ Types: walk, run, bike, swim, strength, yoga, other
 ```json
 {
   "name": "Vitamin D3",
-  "dosage": "5000 IU",
+  "dosage_amount": 5000,
+  "dosage_unit": "IU",
   "purpose": "Vitamin D supplementation",
   "time_of_day": "morning",
   "with_food": true,
@@ -158,7 +159,10 @@ Types: walk, run, bike, swim, strength, yoga, other
   "end_date": null
 }
 ```
+- `dosage_amount`: numeric value (supports large numbers like 10000000000 for probiotics)
+- `dosage_unit`: mg, g, mcg, IU, CFU, tbsp, cup, etc.
 - `time_of_day`: morning, midday, afternoon, evening, bedtime
+- Response includes `dosage_display` with human-readable format (e.g., "5K IU", "10B CFU")
 
 **GET /supplements** - List all supplements
 - Query params: `active=true|false`, `time_of_day=morning|midday|afternoon|evening|bedtime`
