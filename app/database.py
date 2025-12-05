@@ -148,7 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_phases_dates ON phases(start_date, end_date);
 
 async def init_db(db_path: str | None = None):
     """Initialize the database with schema."""
-    path = db_path or settings.database_path
+    path = db_path or settings.health_tracker_database_path
     if path != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -176,7 +176,7 @@ async def init_db(db_path: str | None = None):
 @asynccontextmanager
 async def get_db(db_path: str | None = None):
     """Get a database connection."""
-    path = db_path or settings.database_path
+    path = db_path or settings.health_tracker_database_path
     db = await aiosqlite.connect(path)
     db.row_factory = aiosqlite.Row
     try:

@@ -165,7 +165,7 @@ Stores user info and macro/calorie target ranges.
 
 All endpoints (except `/health`) require header:
 ```
-Authorization: Bearer <API_TOKEN>
+Authorization: Bearer <HEALTH_TRACKER_API_TOKEN>
 ```
 
 ---
@@ -644,8 +644,8 @@ health-tracker/
    aiosqlite==0.19.0
    ```
 3. Implement `app/config.py`:
-   - Use `pydantic-settings` to load `API_TOKEN` and `DATABASE_PATH` from environment
-   - Default `DATABASE_PATH` to `./data/health.db` for local dev
+   - Use `pydantic-settings` to load `HEALTH_TRACKER_API_TOKEN` and `HEALTH_TRACKER_DATABASE_PATH` from environment
+   - Default `HEALTH_TRACKER_DATABASE_PATH` to `./data/health.db` for local dev
 4. Implement `app/database.py`:
    - Async SQLite connection using `aiosqlite`
    - `init_db()` function that creates all 8 tables with proper constraints
@@ -899,13 +899,13 @@ health-tracker/
 1. Test locally:
    ```bash
    docker build -t health-tracker .
-   docker run -p 8000:8000 -e API_TOKEN=test -e DATABASE_PATH=/data/health.db health-tracker
+   docker run -p 8000:8000 -e HEALTH_TRACKER_API_TOKEN=test -e HEALTH_TRACKER_DATABASE_PATH=/data/health.db health-tracker
    ```
 2. Create Railway project
 3. Add persistent volume mounted at `/data`
 4. Set environment variables:
-   - `API_TOKEN` — generate a secure token
-   - `DATABASE_PATH` — `/data/health.db`
+   - `HEALTH_TRACKER_API_TOKEN` — generate a secure token
+   - `HEALTH_TRACKER_DATABASE_PATH` — `/data/health.db`
 5. Deploy via Railway CLI or GitHub integration
 6. Verify all endpoints work
 7. Update `skill/SKILL.md` with production URL
@@ -917,8 +917,8 @@ health-tracker/
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `API_TOKEN` | Bearer token for authentication | — | Yes |
-| `DATABASE_PATH` | Path to SQLite database file | `./data/health.db` | No |
+| `HEALTH_TRACKER_API_TOKEN` | Bearer token for authentication | — | Yes |
+| `HEALTH_TRACKER_DATABASE_PATH` | Path to SQLite database file | `./data/health.db` | No |
 
 ---
 

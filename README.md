@@ -27,8 +27,8 @@ pip install -r requirements.txt
 
 3. Set environment variables:
 ```bash
-export API_TOKEN=your-token-here
-export DATABASE_PATH=./data/health.db
+export HEALTH_TRACKER_API_TOKEN=your-token-here
+export HEALTH_TRACKER_DATABASE_PATH=./data/health.db
 ```
 
 4. Run the server:
@@ -55,7 +55,7 @@ pytest --cov=app --cov-report=html
 Build and run:
 ```bash
 docker build -t health-tracker .
-docker run -p 8000:8000 -e API_TOKEN=your-token -v $(pwd)/data:/data health-tracker
+docker run -p 8000:8000 -e HEALTH_TRACKER_API_TOKEN=your-token -v $(pwd)/data:/data health-tracker
 ```
 
 ## API Authentication
@@ -63,7 +63,7 @@ docker run -p 8000:8000 -e API_TOKEN=your-token -v $(pwd)/data:/data health-trac
 All endpoints (except `/health`) require a Bearer token:
 
 ```
-Authorization: Bearer <API_TOKEN>
+Authorization: Bearer <HEALTH_TRACKER_API_TOKEN>
 ```
 
 ## API Endpoints
@@ -133,14 +133,14 @@ Authorization: Bearer <API_TOKEN>
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `API_TOKEN` | Bearer token for authentication | Required |
-| `DATABASE_PATH` | Path to SQLite database | `./data/health.db` |
+| `HEALTH_TRACKER_API_TOKEN` | Bearer token for authentication | Required |
+| `HEALTH_TRACKER_DATABASE_PATH` | Path to SQLite database | `./data/health.db` |
 
 ## Deployment on Railway
 
 1. Connect your GitHub repository to Railway
 2. Add a persistent volume mounted at `/data`
 3. Set environment variables:
-   - `API_TOKEN` - Generate a secure token
-   - `DATABASE_PATH` - `/data/health.db`
+   - `HEALTH_TRACKER_API_TOKEN` - Generate a secure token
+   - `HEALTH_TRACKER_DATABASE_PATH` - `/data/health.db`
 4. Deploy!

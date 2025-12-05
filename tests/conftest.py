@@ -6,7 +6,7 @@ from httpx import AsyncClient, ASGITransport
 
 # Set environment variables BEFORE importing app modules
 TEST_TOKEN = "test-token"
-os.environ["API_TOKEN"] = TEST_TOKEN
+os.environ["HEALTH_TRACKER_API_TOKEN"] = TEST_TOKEN
 
 from app.database import init_db, get_db, SCHEMA
 from app.config import settings
@@ -23,8 +23,8 @@ def test_db_path(tmp_path):
 async def test_db(test_db_path, monkeypatch):
     """Initialize test database and patch settings."""
     # Patch settings to use test database
-    monkeypatch.setattr(settings, "database_path", test_db_path)
-    monkeypatch.setattr(settings, "api_token", TEST_TOKEN)
+    monkeypatch.setattr(settings, "health_tracker_database_path", test_db_path)
+    monkeypatch.setattr(settings, "health_tracker_api_token", TEST_TOKEN)
 
     # Initialize the database
     await init_db(test_db_path)

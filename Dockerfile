@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ app/
 
 # Set environment defaults
-ENV DATABASE_PATH=/data/health.db
+ENV HEALTH_TRACKER_DATABASE_PATH=/data/health.db
 ENV PORT=8000
 
 # Expose port
