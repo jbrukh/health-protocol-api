@@ -60,14 +60,48 @@ async def clear_phases(_: str = Depends(verify_token)) -> dict:
         return {"deleted": cursor.rowcount}
 
 
+@router.delete("/clear-blood-pressure", status_code=200)
+async def clear_blood_pressure(_: str = Depends(verify_token)) -> dict:
+    """Clear all blood pressure readings."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM blood_pressure")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-activity", status_code=200)
+async def clear_activity(_: str = Depends(verify_token)) -> dict:
+    """Clear all daily activity records."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM daily_activity")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+@router.delete("/clear-sleep", status_code=200)
+async def clear_sleep(_: str = Depends(verify_token)) -> dict:
+    """Clear all sleep records."""
+    async with get_db() as db:
+        cursor = await db.execute("DELETE FROM sleep")
+        await db.commit()
+        return {"deleted": cursor.rowcount}
+
+
+ALLOWED_TABLES = frozenset([
+    "foods", "exercises", "daily_snapshots", "body_measurements",
+    "recipe_items", "recipes", "ingredients", "supplements", "phases",
+    "blood_pressure", "daily_activity", "sleep"
+])
+
+
 @router.delete("/clear-all", status_code=200)
 async def clear_all(_: str = Depends(verify_token)) -> dict:
-    """Clear everything except profile."""
+    """Clear everything except profile and Withings tokens."""
     async with get_db() as db:
-        tables = ["foods", "exercises", "daily_snapshots", "body_measurements", "recipe_items", "recipes", "ingredients", "supplements", "phases"]
         total = 0
-        for table in tables:
-            cursor = await db.execute(f"DELETE FROM {table}")
+        for table in ALLOWED_TABLES:
+            # Table name is from whitelist, safe to use in query
+            cursor = await db.execute(f"DELETE FROM {table}")  # nosec B608
             total += cursor.rowcount
         await db.commit()
         return {"deleted": total}

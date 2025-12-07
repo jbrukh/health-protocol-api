@@ -143,6 +143,66 @@ CREATE TABLE IF NOT EXISTS phases (
 );
 
 CREATE INDEX IF NOT EXISTS idx_phases_dates ON phases(start_date, end_date);
+
+-- Withings tokens (single row)
+CREATE TABLE IF NOT EXISTS withings_tokens (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    withings_user_id TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'needs_reauth')),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Blood pressure
+CREATE TABLE IF NOT EXISTS blood_pressure (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    systolic INTEGER NOT NULL,
+    diastolic INTEGER NOT NULL,
+    heart_rate INTEGER,
+    source TEXT NOT NULL DEFAULT 'manual',
+    withings_id TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blood_pressure_date ON blood_pressure(date);
+
+-- Daily activity (one row per day)
+CREATE TABLE IF NOT EXISTS daily_activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE UNIQUE NOT NULL,
+    steps INTEGER,
+    distance_miles REAL,
+    active_calories INTEGER,
+    elevation_ft REAL,
+    source TEXT NOT NULL DEFAULT 'manual',
+    withings_id TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_activity_date ON daily_activity(date);
+
+-- Sleep
+CREATE TABLE IF NOT EXISTS sleep (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE NOT NULL,
+    sleep_start TIMESTAMP,
+    sleep_end TIMESTAMP,
+    duration_minutes INTEGER,
+    deep_minutes INTEGER,
+    light_minutes INTEGER,
+    rem_minutes INTEGER,
+    awake_minutes INTEGER,
+    source TEXT NOT NULL DEFAULT 'manual',
+    withings_id TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sleep_date ON sleep(date);
 """
 
 
@@ -171,6 +231,28 @@ async def init_db(db_path: str | None = None):
 
         await db.executescript(SCHEMA)
         await db.commit()
+
+        # Migrate body_measurements table for Withings integration
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='body_measurements'")
+        if await cursor.fetchone():
+            cursor = await db.execute("PRAGMA table_info(body_measurements)")
+            columns = await cursor.fetchall()
+            column_names = [col[1] for col in columns]
+
+            # Add new columns if they don't exist
+            new_columns = [
+                ("fat_mass_lbs", "REAL"),
+                ("muscle_mass_lbs", "REAL"),
+                ("bone_mass_lbs", "REAL"),
+                ("body_water_pct", "REAL"),
+                ("source", "TEXT NOT NULL DEFAULT 'manual'"),
+                ("withings_id", "TEXT"),
+            ]
+            for col_name, col_type in new_columns:
+                if col_name not in column_names:
+                    await db.execute(f"ALTER TABLE body_measurements ADD COLUMN {col_name} {col_type}")
+
+            await db.commit()
 
 
 @asynccontextmanager

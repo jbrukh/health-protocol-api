@@ -7,19 +7,41 @@ from app.database import get_db
 from app.models.body import BodyMeasurementCreate, BodyMeasurementResponse, BodyMeasurementUpdate
 
 
+def _row_to_response(row) -> BodyMeasurementResponse:
+    """Convert a database row to a BodyMeasurementResponse."""
+    return BodyMeasurementResponse(
+        id=row["id"],
+        date=date.fromisoformat(row["date"]),
+        time=time.fromisoformat(row["time"]),
+        weight_lbs=row["weight_lbs"],
+        waist_cm=row["waist_cm"],
+        fat_mass_lbs=row["fat_mass_lbs"] if "fat_mass_lbs" in row.keys() else None,
+        muscle_mass_lbs=row["muscle_mass_lbs"] if "muscle_mass_lbs" in row.keys() else None,
+        bone_mass_lbs=row["bone_mass_lbs"] if "bone_mass_lbs" in row.keys() else None,
+        body_water_pct=row["body_water_pct"] if "body_water_pct" in row.keys() else None,
+        source=row["source"] if "source" in row.keys() else "manual",
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
 async def create_measurement(data: BodyMeasurementCreate, db_path: str | None = None) -> BodyMeasurementResponse:
     """Create a body measurement."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
             """
-            INSERT INTO body_measurements (date, time, weight_lbs, waist_cm)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO body_measurements (date, time, weight_lbs, waist_cm, fat_mass_lbs, muscle_mass_lbs, bone_mass_lbs, body_water_pct, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 data.date.isoformat(),
                 data.time.isoformat(),
                 data.weight_lbs,
                 data.waist_cm,
+                data.fat_mass_lbs,
+                data.muscle_mass_lbs,
+                data.bone_mass_lbs,
+                data.body_water_pct,
+                data.source,
             ),
         )
         await db.commit()
@@ -43,14 +65,7 @@ async def get_measurement(measurement_id: int, db_path: str | None = None) -> Bo
                 detail=f"Body measurement with id {measurement_id} not found",
             )
 
-        return BodyMeasurementResponse(
-            id=row["id"],
-            date=date.fromisoformat(row["date"]),
-            time=time.fromisoformat(row["time"]),
-            weight_lbs=row["weight_lbs"],
-            waist_cm=row["waist_cm"],
-            created_at=datetime.fromisoformat(row["created_at"]),
-        )
+        return _row_to_response(row)
 
 
 async def get_measurements(measurement_date: date, db_path: str | None = None) -> list[BodyMeasurementResponse]:
@@ -62,17 +77,7 @@ async def get_measurements(measurement_date: date, db_path: str | None = None) -
         )
         rows = await cursor.fetchall()
 
-        return [
-            BodyMeasurementResponse(
-                id=row["id"],
-                date=date.fromisoformat(row["date"]),
-                time=time.fromisoformat(row["time"]),
-                weight_lbs=row["weight_lbs"],
-                waist_cm=row["waist_cm"],
-                created_at=datetime.fromisoformat(row["created_at"]),
-            )
-            for row in rows
-        ]
+        return [_row_to_response(row) for row in rows]
 
 
 async def get_latest_measurement(db_path: str | None = None) -> Optional[BodyMeasurementResponse]:
@@ -86,14 +91,7 @@ async def get_latest_measurement(db_path: str | None = None) -> Optional[BodyMea
         if row is None:
             return None
 
-        return BodyMeasurementResponse(
-            id=row["id"],
-            date=date.fromisoformat(row["date"]),
-            time=time.fromisoformat(row["time"]),
-            weight_lbs=row["weight_lbs"],
-            waist_cm=row["waist_cm"],
-            created_at=datetime.fromisoformat(row["created_at"]),
-        )
+        return _row_to_response(row)
 
 
 async def get_measurements_range(
@@ -107,17 +105,22 @@ async def get_measurements_range(
         )
         rows = await cursor.fetchall()
 
-        return [
-            BodyMeasurementResponse(
-                id=row["id"],
-                date=date.fromisoformat(row["date"]),
-                time=time.fromisoformat(row["time"]),
-                weight_lbs=row["weight_lbs"],
-                waist_cm=row["waist_cm"],
-                created_at=datetime.fromisoformat(row["created_at"]),
-            )
-            for row in rows
-        ]
+        return [_row_to_response(row) for row in rows]
+
+
+async def get_measurement_by_withings_id(withings_id: str, db_path: str | None = None) -> Optional[BodyMeasurementResponse]:
+    """Get a body measurement by Withings ID (for deduplication)."""
+    async with get_db(db_path) as db:
+        cursor = await db.execute(
+            "SELECT * FROM body_measurements WHERE withings_id = ?",
+            (withings_id,),
+        )
+        row = await cursor.fetchone()
+
+        if row is None:
+            return None
+
+        return _row_to_response(row)
 
 
 async def update_measurement(

@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RecipeItemCreate(BaseModel):
-    ingredient_id: int
-    amount: float
-    unit: str
+    ingredient_id: int = Field(gt=0)
+    amount: float = Field(gt=0)
+    unit: str = Field(min_length=1, max_length=50)
 
 
 class RecipeItemResponse(BaseModel):
@@ -32,7 +32,7 @@ class RecipeTotals(BaseModel):
 
 
 class RecipeCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=255)
     items: list[RecipeItemCreate] = []
 
 
@@ -54,9 +54,9 @@ class RecipeListResponse(BaseModel):
 
 
 class RecipeUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
 
 
 class RecipeItemUpdate(BaseModel):
-    amount: Optional[float] = None
-    unit: Optional[str] = None
+    amount: Optional[float] = Field(default=None, gt=0)
+    unit: Optional[str] = Field(default=None, min_length=1, max_length=50)

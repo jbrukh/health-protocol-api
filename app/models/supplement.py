@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 
 class TimeOfDay(str, Enum):
@@ -29,13 +29,13 @@ def format_human_readable(amount: float) -> str:
 
 
 class SupplementCreate(BaseModel):
-    name: str
-    dosage_amount: float
-    dosage_unit: str
-    purpose: str
+    name: str = Field(min_length=1, max_length=255)
+    dosage_amount: float = Field(gt=0)
+    dosage_unit: str = Field(min_length=1, max_length=50)
+    purpose: str = Field(min_length=1, max_length=500)
     time_of_day: TimeOfDay
     with_food: bool = False
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
     start_date: date
     end_date: Optional[date] = None
 
@@ -63,13 +63,13 @@ class SupplementResponse(BaseModel):
 
 
 class SupplementUpdate(BaseModel):
-    name: Optional[str] = None
-    dosage_amount: Optional[float] = None
-    dosage_unit: Optional[str] = None
-    purpose: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    dosage_amount: Optional[float] = Field(default=None, gt=0)
+    dosage_unit: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    purpose: Optional[str] = Field(default=None, min_length=1, max_length=500)
     time_of_day: Optional[TimeOfDay] = None
     with_food: Optional[bool] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 

@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.database import get_db
 from app.models.macro import MacroTotals
@@ -78,9 +78,5 @@ async def generate_missing_snapshots(
     current = start_date
     while current <= end_date:
         snapshots[current] = await get_or_create_snapshot(current, db_path)
-        current = date(
-            current.year + (current.month == 12 and current.day == 31),
-            (current.month % 12) + 1 if current.day == (31 if current.month in [1, 3, 5, 7, 8, 10, 12] else 30 if current.month in [4, 6, 9, 11] else 28 + (current.year % 4 == 0)) else current.month,
-            1 if current.day == (31 if current.month in [1, 3, 5, 7, 8, 10, 12] else 30 if current.month in [4, 6, 9, 11] else 28 + (current.year % 4 == 0)) else current.day + 1,
-        )
+        current = current + timedelta(days=1)
     return snapshots
