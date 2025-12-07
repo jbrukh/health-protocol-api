@@ -61,7 +61,7 @@ Authorization: Bearer <API_TOKEN>
 |--------|----------|-------------|
 | GET | `/macros/today` | Get today's macro totals with target percentages |
 | GET | `/macros/remaining` | Get remaining macro budget for today |
-| GET | `/macros/history?days=7` | Get macro history for last N days |
+| GET | `/macros/history` | Get macro history (date range, pagination) |
 
 ### Body Measurements
 | Method | Endpoint | Description |
@@ -346,6 +346,36 @@ Authorization: Bearer <API_TOKEN>
     "sodium_mg": {"max": 500}
   },
   "suggestion": "You have room for 300-700 more calories"
+}
+```
+
+**MacroHistoryResponse**
+```json
+{
+  "days": [
+    {
+      "date": "2024-01-15",
+      "macros": {
+        "calories": 1800,
+        "protein_g": 150,
+        "carbs_g": 200,
+        "fats_g": 60,
+        "sodium_mg": 2000
+      },
+      "body": {
+        "weight_lbs": 175.5,
+        "waist_cm": 85.0,
+        "measurements": [
+          {"time": "07:30:00", "weight_lbs": 175.5, "waist_cm": 85.0}
+        ]
+      }
+    }
+  ],
+  "start_date": "2024-01-08",
+  "end_date": "2024-01-15",
+  "total_days": 8,
+  "limit": 100,
+  "offset": 0
 }
 ```
 
@@ -691,6 +721,118 @@ HTTP Status Codes:
 
 ---
 
+## Query Parameters Reference
+
+### Pagination and Date Range Endpoints
+
+The following endpoints support date range filtering and pagination:
+
+#### Body Measurements: `GET /body`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | 30 days ago | Start of date range (YYYY-MM-DD) |
+| `end_date` | date | today | End of date range (YYYY-MM-DD) |
+| `limit` | int | 100 | Max results (1-1000) |
+| `offset` | int | 0 | Number of results to skip |
+
+Example: `GET /body?start_date=2024-01-01&end_date=2024-01-31&limit=50&offset=0`
+
+#### Body Measurements Summary: `GET /body/summary`
+No parameters. Returns earliest/latest dates and total count.
+
+#### Blood Pressure: `GET /blood-pressure`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | 30 days ago | Start of date range (YYYY-MM-DD) |
+| `end_date` | date | today | End of date range (YYYY-MM-DD) |
+| `limit` | int | 100 | Max results (1-1000) |
+| `offset` | int | 0 | Number of results to skip |
+
+Example: `GET /blood-pressure?start_date=2024-01-01&end_date=2024-12-31&limit=100`
+
+#### Blood Pressure Summary: `GET /blood-pressure/summary`
+No parameters. Returns earliest/latest dates and total count.
+
+#### Activity: `GET /activity`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | 30 days ago | Start of date range (YYYY-MM-DD) |
+| `end_date` | date | today | End of date range (YYYY-MM-DD) |
+| `limit` | int | 100 | Max results (1-1000) |
+| `offset` | int | 0 | Number of results to skip |
+
+Example: `GET /activity?start_date=2024-06-01&end_date=2024-06-30&limit=30`
+
+#### Activity Summary: `GET /activity/summary`
+No parameters. Returns earliest/latest dates and total count.
+
+#### Macros History: `GET /macros/history`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | 30 days ago | Start of date range (YYYY-MM-DD) |
+| `end_date` | date | today | End of date range (YYYY-MM-DD) |
+| `limit` | int | 100 | Max days to return (1-1000) |
+| `offset` | int | 0 | Number of days to skip |
+
+Example: `GET /macros/history?start_date=2024-12-01&end_date=2024-12-07&limit=7`
+
+Response includes `total_days`, `limit`, and `offset` for pagination metadata.
+
+### Other Filtered Endpoints
+
+#### Foods: `GET /foods`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `date` | date | today | Date to get entries for (YYYY-MM-DD) |
+
+Example: `GET /foods?date=2024-01-15`
+
+#### Ingredients Search: `GET /ingredients/search`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `q` | string | required | Search query (name contains) |
+
+Example: `GET /ingredients/search?q=chicken`
+
+#### Exercises: `GET /exercises`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `date` | date | today | Date to get entries for (YYYY-MM-DD) |
+
+Example: `GET /exercises?date=2024-01-15`
+
+#### Exercises History: `GET /exercises/history`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `days` | int | 30 | Number of days of history |
+
+Example: `GET /exercises/history?days=7`
+
+#### Supplements List: `GET /supplements`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `active_only` | bool | false | Only return active supplements |
+| `time_of_day` | string | none | Filter by time (morning, midday, afternoon, evening, bedtime) |
+
+Example: `GET /supplements?active_only=true&time_of_day=morning`
+
+#### Supplements History: `GET /supplements/history`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | required | Start of date range (YYYY-MM-DD) |
+| `end_date` | date | required | End of date range (YYYY-MM-DD) |
+
+Example: `GET /supplements/history?start_date=2024-01-01&end_date=2024-01-31`
+
+#### Sleep: `GET /sleep`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `date` | date | today | Date to get sleep data for (YYYY-MM-DD) |
+
+Example: `GET /sleep?date=2024-01-15`
+
+---
+
 ## Usage Examples
 
 ### Log breakfast and check remaining macros
@@ -702,9 +844,21 @@ HTTP Status Codes:
 2. Optionally log post-workout nutrition via `POST /foods`
 
 ### Weekly review
-1. `GET /macros/history?days=7` for nutrition trends
+1. `GET /macros/history?limit=7` for last 7 days of nutrition
 2. `GET /exercises/history?days=7` for workout summary
 3. `GET /body/latest` for current measurements
+
+### Get full data history with pagination
+```bash
+# Get all body measurements in batches of 100
+GET /body?start_date=2020-01-01&end_date=2024-12-31&limit=100&offset=0
+GET /body?start_date=2020-01-01&end_date=2024-12-31&limit=100&offset=100
+# ... continue until all data retrieved
+
+# Check how much data exists first
+GET /body/summary
+# Returns: {"earliest_date": "2020-01-15", "latest_date": "2024-12-07", "total_count": 1500}
+```
 
 ### Withings sync
 1. `GET /withings/auth` to get OAuth URL

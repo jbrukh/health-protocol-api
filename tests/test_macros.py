@@ -61,11 +61,14 @@ async def test_get_macro_history(client, auth_headers):
         "date": today, "time": "07:00:00", "weight_lbs": 185.0,
     }, headers=auth_headers)
 
-    response = await client.get("/macros/history?days=7", headers=auth_headers)
+    response = await client.get("/macros/history?limit=7", headers=auth_headers)
     assert response.status_code == 200
     result = response.json()
     assert "days" in result
     assert len(result["days"]) == 7
+    assert "total_days" in result
+    assert "limit" in result
+    assert result["limit"] == 7
 
     today_entry = result["days"][0]
     assert today_entry["date"] == today

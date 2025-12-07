@@ -410,14 +410,29 @@ class HealthTrackerClient:
         """Get remaining macro budget for today."""
         return self._get("/macros/remaining")
 
-    def get_macros_history(self, days: int = 7) -> APIResponse:
+    def get_macros_history(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> APIResponse:
         """
-        Get macro and body measurement history.
+        Get macro and body measurement history for a date range with pagination.
+        Defaults to last 30 days if no dates provided.
 
         Args:
-            days: Number of days to look back (default 7)
+            start_date: Start date in YYYY-MM-DD format (default: 30 days ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+            limit: Max days to return (1-1000, default 100)
+            offset: Days to skip (default 0)
         """
-        return self._get("/macros/history", params={"days": days})
+        params = {"limit": limit, "offset": offset}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        return self._get("/macros/history", params=params)
 
     # ==================== Body Measurements ====================
 

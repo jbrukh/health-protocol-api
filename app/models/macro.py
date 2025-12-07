@@ -84,3 +84,8 @@ class MacroHistoryDay(BaseModel):
 
 class MacroHistoryResponse(BaseModel):
     days: list[MacroHistoryDay]
+    start_date: date
+    end_date: date
+    total_days: int
+    limit: int
+    offset: int

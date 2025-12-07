@@ -110,12 +110,19 @@ async def get_remaining_macros(db_path: str | None = None) -> MacroRemainingResp
     )
 
 
-async def get_macro_history(days: int, db_path: str | None = None) -> MacroHistoryResponse:
-    """Get macro and body measurement history for the last N days."""
-    today = date.today()
-    start_date = today - timedelta(days=days - 1)
+async def get_macro_history(
+    start_date: date,
+    end_date: date,
+    limit: int = 100,
+    offset: int = 0,
+    db_path: str | None = None,
+) -> MacroHistoryResponse:
+    """Get macro and body measurement history for a date range with pagination."""
+    # Calculate total days in range
+    total_days = (end_date - start_date).days + 1
 
-    body_measurements = await get_measurements_range(start_date, today, limit=1000, offset=0, db_path=db_path)
+    # Get body measurements for the full range
+    body_measurements = await get_measurements_range(start_date, end_date, limit=1000, offset=0, db_path=db_path)
 
     body_by_date: dict[date, list] = {}
     for m in body_measurements:
@@ -123,14 +130,23 @@ async def get_macro_history(days: int, db_path: str | None = None) -> MacroHisto
             body_by_date[m.date] = []
         body_by_date[m.date].append(m)
 
-    history_days = []
-    current = today
+    # Generate all days in range, then apply pagination
+    all_days = []
+    current = end_date
     while current >= start_date:
-        macros = await get_or_create_snapshot(current, db_path)
+        all_days.append(current)
+        current -= timedelta(days=1)
+
+    # Apply pagination to the days list
+    paginated_days = all_days[offset:offset + limit]
+
+    history_days = []
+    for day in paginated_days:
+        macros = await get_or_create_snapshot(day, db_path)
 
         body_summary = None
-        if current in body_by_date:
-            measurements = body_by_date[current]
+        if day in body_by_date:
+            measurements = body_by_date[day]
             first = measurements[0]
             body_summary = BodyDaySummary(
                 weight_lbs=first.weight_lbs,
@@ -147,11 +163,17 @@ async def get_macro_history(days: int, db_path: str | None = None) -> MacroHisto
 
         history_days.append(
             MacroHistoryDay(
-                date=current,
+                date=day,
                 macros=macros,
                 body=body_summary,
             )
         )
-        current -= timedelta(days=1)
 
-    return MacroHistoryResponse(days=history_days)
+    return MacroHistoryResponse(
+        days=history_days,
+        start_date=start_date,
+        end_date=end_date,
+        total_days=total_days,
+        limit=limit,
+        offset=offset,
+    )

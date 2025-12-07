@@ -87,10 +87,11 @@ async def test_history_flow(client, auth_headers):
         "date": today, "time": "07:00:00", "weight_lbs": 180.0, "waist_cm": 85.0,
     }, headers=auth_headers)
 
-    history_response = await client.get("/macros/history?days=7", headers=auth_headers)
+    history_response = await client.get("/macros/history?limit=7", headers=auth_headers)
     history = history_response.json()
 
     assert len(history["days"]) == 7
+    assert history["limit"] == 7
 
     today_data = history["days"][0]
     assert today_data["date"] == today

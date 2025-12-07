@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 
 from app.auth import verify_token
@@ -25,8 +28,16 @@ async def get_remaining_macros(
 
 @router.get("/history", response_model=MacroHistoryResponse)
 async def get_macro_history(
-    days: int = Query(7, description="Number of days to look back"),
+    start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD), defaults to 30 days ago"),
+    end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD), defaults to today"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of days to return"),
+    offset: int = Query(0, ge=0, description="Number of days to skip"),
     _: str = Depends(verify_token),
 ) -> MacroHistoryResponse:
-    """Get macro and body measurement history for the last N days."""
-    return await macro_service.get_macro_history(days)
+    """Get macro and body measurement history for a date range with pagination."""
+    if end_date is None:
+        end_date = date.today()
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    return await macro_service.get_macro_history(start_date, end_date, limit, offset)
