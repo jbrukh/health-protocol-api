@@ -109,31 +109,28 @@ Authorization: Bearer <API_TOKEN>
 ### Blood Pressure
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/blood-pressure` | Log blood pressure reading |
 | GET | `/blood-pressure` | Get readings (date range, pagination) |
 | GET | `/blood-pressure/summary` | Get data summary (date range, total count) |
 | GET | `/blood-pressure/latest` | Get most recent reading |
-| GET | `/blood-pressure/{id}` | Get reading by ID |
-| DELETE | `/blood-pressure/{id}` | Delete a reading |
+
+*Note: Blood pressure data is synced from Withings. Manual entry not supported.*
 
 ### Daily Activity (Steps, Distance, etc.)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/activity` | Log daily activity |
 | GET | `/activity` | Get activity (date range, pagination) |
 | GET | `/activity/summary` | Get data summary (date range, total count) |
 | GET | `/activity/latest` | Get most recent activity |
-| GET | `/activity/{date}` | Get activity for specific date |
-| DELETE | `/activity/{date}` | Delete activity for a date |
+
+*Note: Activity data is synced from Withings. Manual entry not supported.*
 
 ### Sleep
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/sleep` | Log sleep data |
-| GET | `/sleep?start_date=&end_date=` | Get sleep in date range |
+| GET | `/sleep?date=YYYY-MM-DD` | Get sleep data for a date (default: today) |
 | GET | `/sleep/latest` | Get most recent sleep entry |
-| GET | `/sleep/{date}` | Get sleep for specific date |
-| DELETE | `/sleep/{date}` | Delete sleep for a date |
+
+*Note: Sleep data is synced from Withings. Manual entry not supported.*
 
 ### Withings Integration
 | Method | Endpoint | Description |
@@ -523,17 +520,7 @@ Note: At least one of `weight_lbs` or `waist_cm` must be provided.
 
 ### Blood Pressure
 
-**BloodPressureCreate**
-```json
-{
-  "date": "2024-01-15",
-  "time": "08:00:00",
-  "systolic": 120,
-  "diastolic": 80,
-  "heart_rate": 72,
-  "source": "withings"
-}
-```
+*Data synced from Withings - read-only*
 
 **BloodPressureResponse**
 ```json
@@ -549,19 +536,28 @@ Note: At least one of `weight_lbs` or `waist_cm` must be provided.
 }
 ```
 
-### Daily Activity
-
-**DailyActivityCreate**
+**BloodPressureListResponse**
 ```json
 {
-  "date": "2024-01-15",
-  "steps": 10000,
-  "distance_miles": 4.5,
-  "active_calories": 350,
-  "elevation_ft": 250,
-  "source": "withings"
+  "readings": [...],
+  "total_in_range": 50,
+  "limit": 100,
+  "offset": 0
 }
 ```
+
+**BloodPressureSummaryResponse**
+```json
+{
+  "earliest_date": "2020-01-15",
+  "latest_date": "2024-12-07",
+  "total_count": 385
+}
+```
+
+### Daily Activity
+
+*Data synced from Withings - read-only*
 
 **DailyActivityResponse**
 ```json
@@ -578,22 +574,28 @@ Note: At least one of `weight_lbs` or `waist_cm` must be provided.
 }
 ```
 
-### Sleep
-
-**SleepCreate**
+**DailyActivityListResponse**
 ```json
 {
-  "date": "2024-01-15",
-  "sleep_start": "2024-01-15T23:00:00",
-  "sleep_end": "2024-01-16T07:00:00",
-  "duration_minutes": 480,
-  "deep_minutes": 90,
-  "light_minutes": 240,
-  "rem_minutes": 120,
-  "awake_minutes": 30,
-  "source": "manual"
+  "activities": [...],
+  "total_in_range": 30,
+  "limit": 100,
+  "offset": 0
 }
 ```
+
+**DailyActivitySummaryResponse**
+```json
+{
+  "earliest_date": "2020-01-15",
+  "latest_date": "2024-12-07",
+  "total_count": 1825
+}
+```
+
+### Sleep
+
+*Data synced from Withings - read-only*
 
 **SleepResponse**
 ```json
@@ -607,7 +609,7 @@ Note: At least one of `weight_lbs` or `waist_cm` must be provided.
   "light_minutes": 240,
   "rem_minutes": 120,
   "awake_minutes": 30,
-  "source": "manual",
+  "source": "withings",
   "created_at": "2024-01-16T07:30:00"
 }
 ```

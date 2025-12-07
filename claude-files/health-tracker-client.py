@@ -811,44 +811,7 @@ class HealthTrackerClient:
         """Get most recent blood pressure reading."""
         return self._get("/blood-pressure/latest")
 
-    def get_blood_pressure_by_id(self, reading_id: int) -> APIResponse:
-        """Get blood pressure reading by ID."""
-        return self._get(f"/blood-pressure/{reading_id}")
-
-    def create_blood_pressure(
-        self,
-        date: str,
-        time: str,
-        systolic: int,
-        diastolic: int,
-        heart_rate: Optional[int] = None,
-        source: str = "manual"
-    ) -> APIResponse:
-        """
-        Log a blood pressure reading.
-
-        Args:
-            date: Date in YYYY-MM-DD format
-            time: Time in HH:MM:SS format
-            systolic: Systolic pressure (upper number)
-            diastolic: Diastolic pressure (lower number)
-            heart_rate: Optional heart rate in BPM
-            source: Data source (default "manual")
-        """
-        data = {
-            "date": date,
-            "time": time,
-            "systolic": systolic,
-            "diastolic": diastolic,
-            "source": source,
-        }
-        if heart_rate is not None:
-            data["heart_rate"] = heart_rate
-        return self._post("/blood-pressure", data)
-
-    def delete_blood_pressure(self, reading_id: int) -> APIResponse:
-        """Delete a blood pressure reading."""
-        return self._delete(f"/blood-pressure/{reading_id}")
+    # Note: Blood pressure data is synced from Withings. Manual create/delete not supported.
 
     # ==================== Activity ====================
 
@@ -884,114 +847,25 @@ class HealthTrackerClient:
         """Get most recent daily activity."""
         return self._get("/activity/latest")
 
-    def get_activity_by_date(self, date: str) -> APIResponse:
-        """Get activity for a specific date."""
-        return self._get(f"/activity/{date}")
-
-    def create_activity(
-        self,
-        date: str,
-        steps: Optional[int] = None,
-        distance_miles: Optional[float] = None,
-        active_calories: Optional[int] = None,
-        elevation_ft: Optional[float] = None,
-        source: str = "manual"
-    ) -> APIResponse:
-        """
-        Log daily activity.
-
-        Args:
-            date: Date in YYYY-MM-DD format
-            steps: Step count
-            distance_miles: Distance walked/run in miles
-            active_calories: Active calories burned
-            elevation_ft: Elevation climbed in feet
-            source: Data source (default "manual")
-        """
-        data = {"date": date, "source": source}
-        if steps is not None:
-            data["steps"] = steps
-        if distance_miles is not None:
-            data["distance_miles"] = distance_miles
-        if active_calories is not None:
-            data["active_calories"] = active_calories
-        if elevation_ft is not None:
-            data["elevation_ft"] = elevation_ft
-        return self._post("/activity", data)
-
-    def delete_activity(self, date: str) -> APIResponse:
-        """Delete activity for a date."""
-        return self._delete(f"/activity/{date}")
+    # Note: Activity data is synced from Withings. Manual create/delete not supported.
 
     # ==================== Sleep ====================
 
-    def get_sleep(self, start_date: str, end_date: str) -> APIResponse:
+    def get_sleep(self, date: Optional[str] = None) -> APIResponse:
         """
-        Get sleep data in a date range.
+        Get sleep data for a date.
 
         Args:
-            start_date: Range start in YYYY-MM-DD format
-            end_date: Range end in YYYY-MM-DD format
+            date: Date in YYYY-MM-DD format (default: today)
         """
-        return self._get("/sleep", params={
-            "start_date": start_date,
-            "end_date": end_date,
-        })
+        params = {"date": date} if date else {}
+        return self._get("/sleep", params=params)
 
     def get_latest_sleep(self) -> APIResponse:
         """Get most recent sleep entry."""
         return self._get("/sleep/latest")
 
-    def get_sleep_by_date(self, date: str) -> APIResponse:
-        """Get sleep for a specific date."""
-        return self._get(f"/sleep/{date}")
-
-    def create_sleep(
-        self,
-        date: str,
-        sleep_start: Optional[str] = None,
-        sleep_end: Optional[str] = None,
-        duration_minutes: Optional[int] = None,
-        deep_minutes: Optional[int] = None,
-        light_minutes: Optional[int] = None,
-        rem_minutes: Optional[int] = None,
-        awake_minutes: Optional[int] = None,
-        source: str = "manual"
-    ) -> APIResponse:
-        """
-        Log sleep data.
-
-        Args:
-            date: Night of sleep in YYYY-MM-DD format
-            sleep_start: Start time as ISO datetime
-            sleep_end: End time as ISO datetime
-            duration_minutes: Total sleep duration
-            deep_minutes: Deep sleep duration
-            light_minutes: Light sleep duration
-            rem_minutes: REM sleep duration
-            awake_minutes: Time awake during sleep
-            source: Data source (default "manual")
-        """
-        data = {"date": date, "source": source}
-        if sleep_start:
-            data["sleep_start"] = sleep_start
-        if sleep_end:
-            data["sleep_end"] = sleep_end
-        if duration_minutes is not None:
-            data["duration_minutes"] = duration_minutes
-        if deep_minutes is not None:
-            data["deep_minutes"] = deep_minutes
-        if light_minutes is not None:
-            data["light_minutes"] = light_minutes
-        if rem_minutes is not None:
-            data["rem_minutes"] = rem_minutes
-        if awake_minutes is not None:
-            data["awake_minutes"] = awake_minutes
-        return self._post("/sleep", data)
-
-    def delete_sleep(self, date: str) -> APIResponse:
-        """Delete sleep for a date."""
-        return self._delete(f"/sleep/{date}")
+    # Note: Sleep data is synced from Withings. Manual create/delete not supported.
 
     # ==================== Withings ====================
 
