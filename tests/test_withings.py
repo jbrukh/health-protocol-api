@@ -258,13 +258,15 @@ class TestWithingsService:
         monkeypatch.setattr(settings, "base_url", "https://test.example.com")
 
         mock_response = MagicMock()
-        mock_response.json.return_value = {"status": 500}
+        mock_response.json.return_value = {"status": 500, "error": "invalid_code"}
 
         with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
             mock_post.return_value = mock_response
-            tokens = await withings_service.exchange_code("bad_code")
+            with pytest.raises(withings_service.TokenExchangeError) as exc_info:
+                await withings_service.exchange_code("bad_code")
 
-        assert tokens is None
+        assert exc_info.value.status == 500
+        assert exc_info.value.error == "invalid_code"
 
     @pytest.mark.asyncio
     async def test_subscribe_webhook_success(self, test_db, monkeypatch):
@@ -531,12 +533,14 @@ class TestWithingsEndpoints:
         monkeypatch.setattr(settings, "base_url", "https://test.example.com")
 
         with patch.object(withings_service, 'exchange_code', new_callable=AsyncMock) as mock_exchange:
-            mock_exchange.return_value = None
+            mock_exchange.side_effect = withings_service.TokenExchangeError(
+                status=503, error="Invalid code", raw={"status": 503}
+            )
 
             response = await client.get("/withings/callback?code=bad_code&state=health-tracker")
 
         assert response.status_code == 400
-        assert "Failed to exchange" in response.json()["detail"]
+        assert "Withings error 503" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_refresh_success(self, client, auth_headers, test_db, monkeypatch):

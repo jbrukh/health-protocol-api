@@ -50,9 +50,10 @@ async def oauth_callback(code: str, state: str | None = None, background_tasks: 
         raise HTTPException(status_code=400, detail="Invalid state parameter")
 
     # Exchange code for tokens
-    tokens = await withings_service.exchange_code(code)
-    if not tokens:
-        raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
+    try:
+        tokens = await withings_service.exchange_code(code)
+    except withings_service.TokenExchangeError as e:
+        raise HTTPException(status_code=400, detail=f"Withings error {e.status}: {e.error}")
 
     # Subscribe to webhooks
     subscriptions = await withings_service.subscribe_all()

@@ -122,8 +122,17 @@ async def get_valid_token() -> str | None:
     return tokens.access_token if tokens else None
 
 
-async def exchange_code(code: str) -> WithingsTokens | None:
-    """Exchange authorization code for tokens."""
+class TokenExchangeError(Exception):
+    """Error during token exchange with details."""
+    def __init__(self, status: int, error: str, raw: dict):
+        self.status = status
+        self.error = error
+        self.raw = raw
+        super().__init__(f"Withings error {status}: {error}")
+
+
+async def exchange_code(code: str) -> WithingsTokens:
+    """Exchange authorization code for tokens. Raises TokenExchangeError on failure."""
     redirect_uri = f"{settings.base_url}/withings/callback"
 
     async with httpx.AsyncClient() as client:
@@ -141,7 +150,11 @@ async def exchange_code(code: str) -> WithingsTokens | None:
 
     data = response.json()
     if data.get("status") != 0:
-        return None
+        raise TokenExchangeError(
+            status=data.get("status"),
+            error=data.get("error", "Unknown error"),
+            raw=data,
+        )
 
     body = data["body"]
     expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=body["expires_in"])
