@@ -154,33 +154,3 @@ async def backfill(request: WithingsBackfillRequest, _: str = Depends(verify_tok
         message="Backfill completed",
         counts=counts,
     )
-
-
-@router.get("/debug/sleep")
-async def debug_sleep(
-    start: str = "2024-01-01",
-    end: str = "2025-12-07",
-    _: str = Depends(verify_token),
-):
-    """Debug endpoint to test sleep API directly."""
-    import httpx
-
-    token = await withings_service.get_valid_token()
-    if not token:
-        return {"error": "No valid token"}
-
-    # Test sleep API directly
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "https://wbsapi.withings.net/v2/sleep",
-                data={
-                    "action": "getsummary",
-                    "startdateymd": start,
-                    "enddateymd": end,
-                },
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            return {"status_code": response.status_code, "response": response.json()}
-    except Exception as e:
-        return {"error": str(e)}
