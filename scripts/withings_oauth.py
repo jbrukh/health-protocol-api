@@ -43,6 +43,7 @@ AVAILABLE_SCOPES = [
     "user.info",
     "user.metrics",
     "user.activity",
+    "user.sleepevents",
 ]
 
 

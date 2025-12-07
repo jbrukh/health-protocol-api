@@ -32,7 +32,7 @@ async def get_auth_url(_: str = Depends(verify_token)):
         "response_type": "code",
         "client_id": settings.withings_client_id,
         "redirect_uri": f"{settings.base_url}/withings/callback",
-        "scope": "user.metrics,user.activity",
+        "scope": "user.info,user.metrics,user.activity,user.sleepevents",
         "state": "health-tracker",
     }
     auth_url = f"{WITHINGS_AUTH_URL}?{urlencode(params)}"

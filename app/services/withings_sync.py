@@ -404,7 +404,7 @@ async def fetch_sleep_chunk(client: httpx.AsyncClient, token: str, start_date: d
             break
 
         if data.get("status") != 0:
-            logger.error(f"Withings Sleep API error: {data}")
+            logger.error(f"Withings Sleep API error (status={data.get('status')}): {data}")
             break
 
         body = data.get("body", {})
