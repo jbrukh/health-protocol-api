@@ -2,7 +2,7 @@
 
 A lightweight REST API for comprehensive health and fitness tracking including food/macro logging, body measurements, exercise tracking, supplement management, and Withings device integration.
 
-**Base URL**: `https://health-tracker-api.up.railway.app` (production) or `https://health-tracker-api-staging.up.railway.app` (staging)
+**Base URL**: `https://health-tracker-api-production.up.railway.app`
 
 ## Authentication
 

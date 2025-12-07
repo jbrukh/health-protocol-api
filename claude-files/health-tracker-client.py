@@ -8,7 +8,7 @@ Usage:
     from health_tracker_client import HealthTrackerClient
 
     client = HealthTrackerClient(
-        base_url="https://health-tracker-api.up.railway.app",
+        base_url="https://health-tracker-api-production.up.railway.app",
         api_token="your-api-token"
     )
 
@@ -55,7 +55,7 @@ class HealthTrackerClient:
         Initialize the client.
 
         Args:
-            base_url: API base URL (e.g., "https://health-tracker-api.up.railway.app")
+            base_url: API base URL (e.g., "https://health-tracker-api-production.up.railway.app")
             api_token: Bearer token for authentication
         """
         self.base_url = base_url.rstrip("/")
@@ -923,9 +923,4 @@ def create_client(base_url: str, api_token: str) -> HealthTrackerClient:
 
 def create_production_client(api_token: str) -> HealthTrackerClient:
     """Create a client for the production API."""
-    return HealthTrackerClient("https://health-tracker-api.up.railway.app", api_token)
-
-
-def create_staging_client(api_token: str) -> HealthTrackerClient:
-    """Create a client for the staging API."""
-    return HealthTrackerClient("https://health-tracker-api-staging.up.railway.app", api_token)
+    return HealthTrackerClient("https://health-tracker-api-production.up.railway.app", api_token)
