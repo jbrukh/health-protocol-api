@@ -3,7 +3,7 @@ Withings data synchronization service.
 
 Handles fetching data from Withings API and storing it in local database.
 """
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from typing import Any
 import httpx
 import logging
@@ -27,6 +27,9 @@ MEAS_TYPE_SYSTOLIC = 10
 MEAS_TYPE_DIASTOLIC = 9
 MEAS_TYPE_HEART_RATE = 11
 
+# Withings API limits
+MAX_ACTIVITY_DAYS = 200  # Withings limits activity/sleep to 200 days per request
+
 
 def kg_to_lbs(kg: float) -> float:
     """Convert kilograms to pounds."""
@@ -49,43 +52,61 @@ def parse_withings_value(value: int, unit: int) -> float:
 
 
 async def fetch_measurements(start_date: date, end_date: date, meas_type: int | None = None) -> list[dict]:
-    """Fetch measurements from Withings Measure API."""
+    """Fetch measurements from Withings Measure API with pagination support."""
     token = await withings_service.get_valid_token()
     if not token:
         logger.error("No valid token for fetching measurements")
         return []
 
-    params = {
-        "action": "getmeas",
-        "startdate": int(datetime.combine(start_date, time.min).timestamp()),
-        "enddate": int(datetime.combine(end_date, time.max).timestamp()),
-    }
-    if meas_type:
-        params["meastype"] = meas_type
+    all_groups = []
+    offset = 0
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                WITHINGS_MEASURE_URL,
-                data=params,
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        data = response.json()
-    except httpx.TimeoutException:
-        logger.error("Timeout fetching measurements from Withings")
-        return []
-    except httpx.RequestError as e:
-        logger.error(f"Network error fetching measurements: {e}")
-        return []
-    except ValueError as e:
-        logger.error(f"Invalid JSON response from Withings: {e}")
-        return []
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while True:
+            params = {
+                "action": "getmeas",
+                "startdate": int(datetime.combine(start_date, time.min).timestamp()),
+                "enddate": int(datetime.combine(end_date, time.max).timestamp()),
+            }
+            if meas_type:
+                params["meastype"] = meas_type
+            if offset:
+                params["offset"] = offset
 
-    if data.get("status") != 0:
-        logger.error(f"Withings API error: {data}")
-        return []
+            try:
+                response = await client.post(
+                    WITHINGS_MEASURE_URL,
+                    data=params,
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                data = response.json()
+            except httpx.TimeoutException:
+                logger.error("Timeout fetching measurements from Withings")
+                break
+            except httpx.RequestError as e:
+                logger.error(f"Network error fetching measurements: {e}")
+                break
+            except ValueError as e:
+                logger.error(f"Invalid JSON response from Withings: {e}")
+                break
 
-    return data.get("body", {}).get("measuregrps", [])
+            if data.get("status") != 0:
+                logger.error(f"Withings API error: {data}")
+                break
+
+            body = data.get("body", {})
+            groups = body.get("measuregrps", [])
+            all_groups.extend(groups)
+
+            # Check if there's more data (pagination)
+            if body.get("more") == 1 and body.get("offset"):
+                offset = body.get("offset")
+                logger.info(f"Fetching more measurements, offset={offset}")
+            else:
+                break
+
+    logger.info(f"Fetched {len(all_groups)} measurement groups total")
+    return all_groups
 
 
 async def sync_body_measurements(measure_groups: list[dict]) -> int:
@@ -218,40 +239,85 @@ async def sync_blood_pressure(measure_groups: list[dict]) -> int:
     return count
 
 
+def generate_date_chunks(start_date: date, end_date: date, chunk_days: int = MAX_ACTIVITY_DAYS) -> list[tuple[date, date]]:
+    """Generate date range chunks for APIs with day limits."""
+    chunks = []
+    current_start = start_date
+    while current_start <= end_date:
+        current_end = min(current_start + timedelta(days=chunk_days - 1), end_date)
+        chunks.append((current_start, current_end))
+        current_start = current_end + timedelta(days=1)
+    return chunks
+
+
+async def fetch_activity_chunk(client: httpx.AsyncClient, token: str, start_date: date, end_date: date) -> list[dict]:
+    """Fetch a single chunk of activity data with pagination."""
+    all_activities = []
+    offset = 0
+
+    while True:
+        params = {
+            "action": "getactivity",
+            "startdateymd": start_date.isoformat(),
+            "enddateymd": end_date.isoformat(),
+        }
+        if offset:
+            params["offset"] = offset
+
+        try:
+            response = await client.post(
+                WITHINGS_ACTIVITY_URL,
+                data=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = response.json()
+        except httpx.TimeoutException:
+            logger.error("Timeout fetching activity from Withings")
+            break
+        except httpx.RequestError as e:
+            logger.error(f"Network error fetching activity: {e}")
+            break
+        except ValueError as e:
+            logger.error(f"Invalid JSON response from Withings activity API: {e}")
+            break
+
+        if data.get("status") != 0:
+            logger.error(f"Withings Activity API error: {data}")
+            break
+
+        body = data.get("body", {})
+        activities = body.get("activities", [])
+        all_activities.extend(activities)
+
+        # Check for pagination
+        if body.get("more") == 1 and body.get("offset"):
+            offset = body.get("offset")
+            logger.info(f"Fetching more activity data, offset={offset}")
+        else:
+            break
+
+    return all_activities
+
+
 async def fetch_activity(start_date: date, end_date: date) -> list[dict]:
-    """Fetch activity data from Withings Activity API."""
+    """Fetch activity data from Withings Activity API with chunking and pagination."""
     token = await withings_service.get_valid_token()
     if not token:
         logger.error("No valid token for fetching activity")
         return []
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                WITHINGS_ACTIVITY_URL,
-                data={
-                    "action": "getactivity",
-                    "startdateymd": start_date.isoformat(),
-                    "enddateymd": end_date.isoformat(),
-                },
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        data = response.json()
-    except httpx.TimeoutException:
-        logger.error("Timeout fetching activity from Withings")
-        return []
-    except httpx.RequestError as e:
-        logger.error(f"Network error fetching activity: {e}")
-        return []
-    except ValueError as e:
-        logger.error(f"Invalid JSON response from Withings activity API: {e}")
-        return []
+    all_activities = []
+    chunks = generate_date_chunks(start_date, end_date, MAX_ACTIVITY_DAYS)
+    logger.info(f"Fetching activity data in {len(chunks)} chunk(s)")
 
-    if data.get("status") != 0:
-        logger.error(f"Withings Activity API error: {data}")
-        return []
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for chunk_start, chunk_end in chunks:
+            logger.info(f"Fetching activity chunk: {chunk_start} to {chunk_end}")
+            activities = await fetch_activity_chunk(client, token, chunk_start, chunk_end)
+            all_activities.extend(activities)
 
-    return data.get("body", {}).get("activities", [])
+    logger.info(f"Fetched {len(all_activities)} activity records total")
+    return all_activities
 
 
 async def sync_activity(activities: list[dict]) -> int:
@@ -305,40 +371,74 @@ async def sync_activity(activities: list[dict]) -> int:
     return count
 
 
+async def fetch_sleep_chunk(client: httpx.AsyncClient, token: str, start_date: date, end_date: date) -> list[dict]:
+    """Fetch a single chunk of sleep data with pagination."""
+    all_sleep = []
+    offset = 0
+
+    while True:
+        params = {
+            "action": "getsummary",
+            "startdateymd": start_date.isoformat(),
+            "enddateymd": end_date.isoformat(),
+        }
+        if offset:
+            params["offset"] = offset
+
+        try:
+            response = await client.post(
+                WITHINGS_SLEEP_URL,
+                data=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = response.json()
+        except httpx.TimeoutException:
+            logger.error("Timeout fetching sleep from Withings")
+            break
+        except httpx.RequestError as e:
+            logger.error(f"Network error fetching sleep: {e}")
+            break
+        except ValueError as e:
+            logger.error(f"Invalid JSON response from Withings sleep API: {e}")
+            break
+
+        if data.get("status") != 0:
+            logger.error(f"Withings Sleep API error: {data}")
+            break
+
+        body = data.get("body", {})
+        series = body.get("series", [])
+        all_sleep.extend(series)
+
+        # Check for pagination
+        if body.get("more") == 1 and body.get("offset"):
+            offset = body.get("offset")
+            logger.info(f"Fetching more sleep data, offset={offset}")
+        else:
+            break
+
+    return all_sleep
+
+
 async def fetch_sleep(start_date: date, end_date: date) -> list[dict]:
-    """Fetch sleep data from Withings Sleep API."""
+    """Fetch sleep data from Withings Sleep API with chunking and pagination."""
     token = await withings_service.get_valid_token()
     if not token:
         logger.error("No valid token for fetching sleep")
         return []
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                WITHINGS_SLEEP_URL,
-                data={
-                    "action": "getsummary",
-                    "startdateymd": start_date.isoformat(),
-                    "enddateymd": end_date.isoformat(),
-                },
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        data = response.json()
-    except httpx.TimeoutException:
-        logger.error("Timeout fetching sleep from Withings")
-        return []
-    except httpx.RequestError as e:
-        logger.error(f"Network error fetching sleep: {e}")
-        return []
-    except ValueError as e:
-        logger.error(f"Invalid JSON response from Withings sleep API: {e}")
-        return []
+    all_sleep = []
+    chunks = generate_date_chunks(start_date, end_date, MAX_ACTIVITY_DAYS)
+    logger.info(f"Fetching sleep data in {len(chunks)} chunk(s)")
 
-    if data.get("status") != 0:
-        logger.error(f"Withings Sleep API error: {data}")
-        return []
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for chunk_start, chunk_end in chunks:
+            logger.info(f"Fetching sleep chunk: {chunk_start} to {chunk_end}")
+            sleep_data = await fetch_sleep_chunk(client, token, chunk_start, chunk_end)
+            all_sleep.extend(sleep_data)
 
-    return data.get("body", {}).get("series", [])
+    logger.info(f"Fetched {len(all_sleep)} sleep records total")
+    return all_sleep
 
 
 async def sync_sleep(sleep_data: list[dict]) -> int:
