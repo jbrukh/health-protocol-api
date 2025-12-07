@@ -157,7 +157,11 @@ async def backfill(request: WithingsBackfillRequest, _: str = Depends(verify_tok
 
 
 @router.get("/debug/sleep")
-async def debug_sleep(_: str = Depends(verify_token)):
+async def debug_sleep(
+    start: str = "2024-01-01",
+    end: str = "2025-12-07",
+    _: str = Depends(verify_token),
+):
     """Debug endpoint to test sleep API directly."""
     import httpx
 
@@ -172,8 +176,8 @@ async def debug_sleep(_: str = Depends(verify_token)):
                 "https://wbsapi.withings.net/v2/sleep",
                 data={
                     "action": "getsummary",
-                    "startdateymd": "2025-12-01",
-                    "enddateymd": "2025-12-07",
+                    "startdateymd": start,
+                    "enddateymd": end,
                 },
                 headers={"Authorization": f"Bearer {token}"},
             )
