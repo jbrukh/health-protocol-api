@@ -1,10 +1,16 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
 from app.auth import verify_token
-from app.models.body import BodyMeasurementCreate, BodyMeasurementResponse, BodyMeasurementUpdate
+from app.models.body import (
+    BodyMeasurementCreate,
+    BodyMeasurementResponse,
+    BodyMeasurementUpdate,
+    BodyMeasurementListResponse,
+    BodyMeasurementSummaryResponse,
+)
 from app.services import body_service
 
 router = APIRouter()
@@ -19,13 +25,36 @@ async def create_measurement(
     return await body_service.create_measurement(data)
 
 
-@router.get("", response_model=list[BodyMeasurementResponse])
+@router.get("", response_model=BodyMeasurementListResponse)
 async def get_measurements(
-    date: date = Query(..., description="Date to get measurements for (YYYY-MM-DD)"),
+    start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD), defaults to 30 days ago"),
+    end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD), defaults to today"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
     _: str = Depends(verify_token),
-) -> list[BodyMeasurementResponse]:
-    """Get body measurements for a date."""
-    return await body_service.get_measurements(date)
+) -> BodyMeasurementListResponse:
+    """Get body measurements for a date range with pagination. Defaults to last 30 days."""
+    if end_date is None:
+        end_date = date.today()
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    measurements = await body_service.get_measurements_range(start_date, end_date, limit, offset)
+    return BodyMeasurementListResponse(
+        measurements=measurements,
+        total_in_range=len(measurements),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/summary", response_model=BodyMeasurementSummaryResponse)
+async def get_summary(
+    _: str = Depends(verify_token),
+) -> BodyMeasurementSummaryResponse:
+    """Get summary of all body measurements (earliest date, latest date, total count)."""
+    summary = await body_service.get_summary()
+    return BodyMeasurementSummaryResponse(**summary)
 
 
 @router.get("/latest", response_model=Optional[BodyMeasurementResponse])

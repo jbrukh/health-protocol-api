@@ -115,7 +115,7 @@ async def get_macro_history(days: int, db_path: str | None = None) -> MacroHisto
     today = date.today()
     start_date = today - timedelta(days=days - 1)
 
-    body_measurements = await get_measurements_range(start_date, today, db_path)
+    body_measurements = await get_measurements_range(start_date, today, limit=1000, offset=0, db_path=db_path)
 
     body_by_date: dict[date, list] = {}
     for m in body_measurements:

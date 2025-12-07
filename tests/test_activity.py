@@ -8,18 +8,21 @@ class TestActivityEndpoints:
     """Tests for activity API endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_activity_not_found(self, client, auth_headers):
-        """Test getting activity when none exists for date."""
+    async def test_get_activity_empty(self, client, auth_headers):
+        """Test getting activity when none exists returns empty list."""
         response = await client.get(
             "/activity",
-            params={"date": "2024-01-15"},
+            params={"start_date": "2024-01-15", "end_date": "2024-01-15"},
             headers=auth_headers,
         )
-        assert response.status_code == 404
+        assert response.status_code == 200
+        data = response.json()
+        assert data["activities"] == []
+        assert data["total_in_range"] == 0
 
     @pytest.mark.asyncio
-    async def test_get_activity_by_date(self, client, auth_headers, test_db):
-        """Test getting activity for a specific date."""
+    async def test_get_activity_by_date_range(self, client, auth_headers, test_db):
+        """Test getting activity for a date range."""
         async with get_db() as db:
             await db.execute(
                 """
@@ -32,14 +35,15 @@ class TestActivityEndpoints:
 
         response = await client.get(
             "/activity",
-            params={"date": "2024-01-15"},
+            params={"start_date": "2024-01-15", "end_date": "2024-01-15"},
             headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["steps"] == 10000
-        assert data["distance_miles"] == 4.5
-        assert data["active_calories"] == 350
+        assert len(data["activities"]) == 1
+        assert data["activities"][0]["steps"] == 10000
+        assert data["activities"][0]["distance_miles"] == 4.5
+        assert data["activities"][0]["active_calories"] == 350
 
     @pytest.mark.asyncio
     async def test_get_latest_none(self, client, auth_headers):

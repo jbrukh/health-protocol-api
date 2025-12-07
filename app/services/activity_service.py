@@ -46,13 +46,45 @@ async def get_latest(db_path: str | None = None) -> Optional[DailyActivityRespon
 
 
 async def get_activity_range(
-    start_date: date, end_date: date, db_path: str | None = None
+    start_date: date,
+    end_date: date,
+    limit: int = 100,
+    offset: int = 0,
+    db_path: str | None = None,
 ) -> list[DailyActivityResponse]:
-    """Get activity within a date range."""
+    """Get activity within a date range with pagination."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
-            "SELECT * FROM daily_activity WHERE date >= ? AND date <= ? ORDER BY date DESC",
-            (start_date.isoformat(), end_date.isoformat()),
+            "SELECT * FROM daily_activity WHERE date >= ? AND date <= ? ORDER BY date DESC LIMIT ? OFFSET ?",
+            (start_date.isoformat(), end_date.isoformat(), limit, offset),
         )
         rows = await cursor.fetchall()
         return [_row_to_response(row) for row in rows]
+
+
+async def get_summary(db_path: str | None = None) -> dict:
+    """Get summary statistics for daily activity."""
+    async with get_db(db_path) as db:
+        cursor = await db.execute(
+            """
+            SELECT
+                MIN(date) as earliest_date,
+                MAX(date) as latest_date,
+                COUNT(*) as total_count
+            FROM daily_activity
+            """
+        )
+        row = await cursor.fetchone()
+
+        if row is None or row["total_count"] == 0:
+            return {
+                "earliest_date": None,
+                "latest_date": None,
+                "total_count": 0,
+            }
+
+        return {
+            "earliest_date": row["earliest_date"],
+            "latest_date": row["latest_date"],
+            "total_count": row["total_count"],
+        }

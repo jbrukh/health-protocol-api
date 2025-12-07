@@ -45,3 +45,16 @@ class BodyMeasurementUpdate(BaseModel):
     muscle_mass_lbs: Optional[float] = Field(default=None, ge=0, le=500)
     bone_mass_lbs: Optional[float] = Field(default=None, ge=0, le=100)
     body_water_pct: Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class BodyMeasurementListResponse(BaseModel):
+    measurements: list[BodyMeasurementResponse]
+    total_in_range: int
+    limit: int
+    offset: int
+
+
+class BodyMeasurementSummaryResponse(BaseModel):
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    total_count: int

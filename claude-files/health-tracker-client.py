@@ -421,9 +421,33 @@ class HealthTrackerClient:
 
     # ==================== Body Measurements ====================
 
-    def get_body_measurements(self, date: str) -> APIResponse:
-        """Get body measurements for a date."""
-        return self._get("/body", params={"date": date})
+    def get_body_measurements(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> APIResponse:
+        """
+        Get body measurements for a date range with pagination.
+        Defaults to last 30 days if no dates provided.
+
+        Args:
+            start_date: Start date in YYYY-MM-DD format (default: 30 days ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+            limit: Max records to return (1-1000, default 100)
+            offset: Records to skip (default 0)
+        """
+        params = {"limit": limit, "offset": offset}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        return self._get("/body", params=params)
+
+    def get_body_summary(self) -> APIResponse:
+        """Get summary of all body measurements (earliest date, latest date, total count)."""
+        return self._get("/body/summary")
 
     def get_latest_body_measurement(self) -> APIResponse:
         """Get the most recent body measurement."""
@@ -755,18 +779,33 @@ class HealthTrackerClient:
 
     # ==================== Blood Pressure ====================
 
-    def get_blood_pressure(self, start_date: str, end_date: str) -> APIResponse:
+    def get_blood_pressure(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> APIResponse:
         """
-        Get blood pressure readings in a date range.
+        Get blood pressure readings for a date range with pagination.
+        Defaults to last 30 days if no dates provided.
 
         Args:
-            start_date: Range start in YYYY-MM-DD format
-            end_date: Range end in YYYY-MM-DD format
+            start_date: Start date in YYYY-MM-DD format (default: 30 days ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+            limit: Max records to return (1-1000, default 100)
+            offset: Records to skip (default 0)
         """
-        return self._get("/blood-pressure", params={
-            "start_date": start_date,
-            "end_date": end_date,
-        })
+        params = {"limit": limit, "offset": offset}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        return self._get("/blood-pressure", params=params)
+
+    def get_blood_pressure_summary(self) -> APIResponse:
+        """Get summary of all blood pressure readings (earliest date, latest date, total count)."""
+        return self._get("/blood-pressure/summary")
 
     def get_latest_blood_pressure(self) -> APIResponse:
         """Get most recent blood pressure reading."""
@@ -813,18 +852,33 @@ class HealthTrackerClient:
 
     # ==================== Activity ====================
 
-    def get_activity(self, start_date: str, end_date: str) -> APIResponse:
+    def get_activity(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> APIResponse:
         """
-        Get daily activity in a date range.
+        Get daily activity for a date range with pagination.
+        Defaults to last 30 days if no dates provided.
 
         Args:
-            start_date: Range start in YYYY-MM-DD format
-            end_date: Range end in YYYY-MM-DD format
+            start_date: Start date in YYYY-MM-DD format (default: 30 days ago)
+            end_date: End date in YYYY-MM-DD format (default: today)
+            limit: Max records to return (1-1000, default 100)
+            offset: Records to skip (default 0)
         """
-        return self._get("/activity", params={
-            "start_date": start_date,
-            "end_date": end_date,
-        })
+        params = {"limit": limit, "offset": offset}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        return self._get("/activity", params=params)
+
+    def get_activity_summary(self) -> APIResponse:
+        """Get summary of all daily activity (earliest date, latest date, total count)."""
+        return self._get("/activity/summary")
 
     def get_latest_activity(self) -> APIResponse:
         """Get most recent daily activity."""

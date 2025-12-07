@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -21,3 +22,16 @@ class DailyActivityResponse(BaseModel):
     source: str
     created_at: datetime
     updated_at: datetime | None = None
+
+
+class DailyActivityListResponse(BaseModel):
+    activities: list[DailyActivityResponse]
+    total_in_range: int
+    limit: int
+    offset: int
+
+
+class DailyActivitySummaryResponse(BaseModel):
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    total_count: int

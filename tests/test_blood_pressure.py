@@ -16,8 +16,8 @@ class TestBloodPressureEndpoints:
         assert response.json()["readings"] == []
 
     @pytest.mark.asyncio
-    async def test_get_readings_by_date(self, client, auth_headers, test_db):
-        """Test getting readings for a specific date."""
+    async def test_get_readings_by_date_range(self, client, auth_headers, test_db):
+        """Test getting readings for a date range."""
         # Insert test data directly
         async with get_db() as db:
             await db.execute(
@@ -31,7 +31,7 @@ class TestBloodPressureEndpoints:
 
         response = await client.get(
             "/blood-pressure",
-            params={"date": "2024-01-15"},
+            params={"start_date": "2024-01-15", "end_date": "2024-01-15"},
             headers=auth_headers,
         )
         assert response.status_code == 200

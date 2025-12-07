@@ -67,7 +67,8 @@ Authorization: Bearer <API_TOKEN>
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/body` | Log a body measurement |
-| GET | `/body?date=YYYY-MM-DD` | Get measurements for a date |
+| GET | `/body` | Get measurements (date range, pagination) |
+| GET | `/body/summary` | Get data summary (date range, total count) |
 | GET | `/body/latest` | Get most recent measurement |
 | GET | `/body/{id}` | Get measurement by ID |
 | PUT | `/body/{id}` | Update a measurement |
@@ -109,7 +110,8 @@ Authorization: Bearer <API_TOKEN>
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/blood-pressure` | Log blood pressure reading |
-| GET | `/blood-pressure?start_date=&end_date=` | Get readings in date range |
+| GET | `/blood-pressure` | Get readings (date range, pagination) |
+| GET | `/blood-pressure/summary` | Get data summary (date range, total count) |
 | GET | `/blood-pressure/latest` | Get most recent reading |
 | GET | `/blood-pressure/{id}` | Get reading by ID |
 | DELETE | `/blood-pressure/{id}` | Delete a reading |
@@ -118,7 +120,8 @@ Authorization: Bearer <API_TOKEN>
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/activity` | Log daily activity |
-| GET | `/activity?start_date=&end_date=` | Get activity in date range |
+| GET | `/activity` | Get activity (date range, pagination) |
+| GET | `/activity/summary` | Get data summary (date range, total count) |
 | GET | `/activity/latest` | Get most recent activity |
 | GET | `/activity/{date}` | Get activity for specific date |
 | DELETE | `/activity/{date}` | Delete activity for a date |

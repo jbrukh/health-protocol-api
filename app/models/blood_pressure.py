@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -24,3 +25,12 @@ class BloodPressureResponse(BaseModel):
 
 class BloodPressureListResponse(BaseModel):
     readings: list[BloodPressureResponse]
+    total_in_range: int
+    limit: int
+    offset: int
+
+
+class BloodPressureSummaryResponse(BaseModel):
+    earliest_date: Optional[str] = None
+    latest_date: Optional[str] = None
+    total_count: int
