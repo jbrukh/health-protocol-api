@@ -331,11 +331,12 @@ async def sync_activity(activities: list[dict]) -> int:
 
         steps = act.get("steps")
         distance_m = act.get("distance")
-        active_calories = act.get("calories")
+        calories = act.get("calories")
         elevation_m = act.get("elevation")
 
-        # Convert units
+        # Convert units (calories must be int for Pydantic model)
         distance_miles = meters_to_miles(distance_m) if distance_m else None
+        active_calories = int(calories) if calories is not None else None
         elevation_ft = meters_to_feet(elevation_m) if elevation_m else None
 
         # Upsert into database (one row per day)
