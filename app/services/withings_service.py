@@ -187,11 +187,11 @@ async def exchange_code(code: str) -> WithingsTokens:
     return await get_tokens()
 
 
-async def subscribe_webhook(appli: int) -> bool:
-    """Subscribe to webhook notifications for a data type."""
+async def subscribe_webhook(appli: int) -> tuple[bool, dict]:
+    """Subscribe to webhook notifications for a data type. Returns (success, response)."""
     token = await get_valid_token()
     if not token:
-        return False
+        return False, {"error": "no_token"}
 
     callback_url = f"{settings.base_url}/withings/webhook"
     nonce = generate_nonce()
@@ -213,7 +213,8 @@ async def subscribe_webhook(appli: int) -> bool:
 
     data = response.json()
     # Status 0 = success, 294 = already subscribed (both ok)
-    return data.get("status") in (0, 294)
+    success = data.get("status") in (0, 294)
+    return success, data
 
 
 async def unsubscribe_webhook(appli: int) -> bool:
@@ -244,14 +245,17 @@ async def unsubscribe_webhook(appli: int) -> bool:
     return data.get("status") == 0
 
 
-async def subscribe_all() -> list[int]:
-    """Subscribe to all supported data types. Returns list of successfully subscribed appli codes."""
+async def subscribe_all() -> tuple[list[int], list[dict]]:
+    """Subscribe to all supported data types. Returns (subscribed appli codes, all responses)."""
     applis = [1, 4, 16, 44]  # Weight, BP, Activity, Sleep
     subscribed = []
+    responses = []
     for appli in applis:
-        if await subscribe_webhook(appli):
+        success, data = await subscribe_webhook(appli)
+        responses.append({"appli": appli, "success": success, "response": data})
+        if success:
             subscribed.append(appli)
-    return subscribed
+    return subscribed, responses
 
 
 async def unsubscribe_all() -> int:

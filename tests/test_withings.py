@@ -288,9 +288,10 @@ class TestWithingsService:
 
         with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
             mock_post.return_value = mock_response
-            result = await withings_service.subscribe_webhook(1)
+            success, data = await withings_service.subscribe_webhook(1)
 
-        assert result is True
+        assert success is True
+        assert data.get("status") == 0
 
     @pytest.mark.asyncio
     async def test_subscribe_webhook_already_subscribed(self, test_db, monkeypatch):
@@ -312,15 +313,15 @@ class TestWithingsService:
 
         with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
             mock_post.return_value = mock_response
-            result = await withings_service.subscribe_webhook(1)
+            success, data = await withings_service.subscribe_webhook(1)
 
-        assert result is True
+        assert success is True
 
     @pytest.mark.asyncio
     async def test_subscribe_webhook_no_token(self, test_db):
         """Test subscribing without valid token."""
-        result = await withings_service.subscribe_webhook(1)
-        assert result is False
+        success, data = await withings_service.subscribe_webhook(1)
+        assert success is False
 
     @pytest.mark.asyncio
     async def test_unsubscribe_webhook_success(self, test_db, monkeypatch):
@@ -523,7 +524,7 @@ class TestWithingsEndpoints:
         with patch.object(withings_service, 'exchange_code', new_callable=AsyncMock) as mock_exchange:
             mock_exchange.return_value = mock_tokens
             with patch.object(withings_service, 'subscribe_all', new_callable=AsyncMock) as mock_subs:
-                mock_subs.return_value = [1, 4, 16, 44]
+                mock_subs.return_value = ([1, 4, 16, 44], [])
 
                 response = await client.get("/withings/callback?code=test_code&state=health-tracker")
 

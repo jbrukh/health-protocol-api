@@ -57,7 +57,7 @@ async def oauth_callback(code: str, state: str | None = None, background_tasks: 
         raise HTTPException(status_code=400, detail=f"Withings error {e.status}: {e.error}")
 
     # Subscribe to webhooks
-    subscriptions = await withings_service.subscribe_all()
+    subscriptions, _ = await withings_service.subscribe_all()
 
     # Trigger backfill in background
     backfill_started = False
@@ -124,10 +124,11 @@ async def subscribe(_: str = Depends(verify_token)):
     if not tokens:
         raise HTTPException(status_code=400, detail="Not connected to Withings")
 
-    subscriptions = await withings_service.subscribe_all()
+    subscriptions, debug = await withings_service.subscribe_all()
     return WithingsSubscribeResponse(
         message="Subscribed to webhooks",
         subscriptions=subscriptions,
+        debug=debug,
     )
 
 

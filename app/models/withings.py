@@ -44,6 +44,7 @@ class WithingsDisconnectResponse(BaseModel):
 class WithingsSubscribeResponse(BaseModel):
     message: str
     subscriptions: list[int]
+    debug: list[dict] | None = None
 
 
 class WithingsBackfillRequest(BaseModel):
