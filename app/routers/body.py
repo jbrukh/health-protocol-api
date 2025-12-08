@@ -12,6 +12,7 @@ from app.models.body import (
     BodyMeasurementSummaryResponse,
 )
 from app.services import body_service
+from app.services.profile_service import get_profile
 
 router = APIRouter()
 
@@ -39,7 +40,10 @@ async def get_measurements(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    measurements = await body_service.get_measurements_range(start_date, end_date, limit, offset)
+    profile = await get_profile()
+    measurements = await body_service.get_measurements_range(
+        start_date, end_date, limit, offset, timezone=profile.timezone
+    )
     return BodyMeasurementListResponse(
         measurements=measurements,
         total_in_range=len(measurements),
@@ -62,7 +66,8 @@ async def get_latest_measurement(
     _: str = Depends(verify_token),
 ) -> Optional[BodyMeasurementResponse]:
     """Get the most recent body measurement."""
-    return await body_service.get_latest_measurement()
+    profile = await get_profile()
+    return await body_service.get_latest_measurement(timezone=profile.timezone)
 
 
 @router.get("/{measurement_id}", response_model=BodyMeasurementResponse)
@@ -71,7 +76,8 @@ async def get_measurement(
     _: str = Depends(verify_token),
 ) -> BodyMeasurementResponse:
     """Get a body measurement by ID."""
-    return await body_service.get_measurement(measurement_id)
+    profile = await get_profile()
+    return await body_service.get_measurement(measurement_id, timezone=profile.timezone)
 
 
 @router.put("/{measurement_id}", response_model=BodyMeasurementResponse)

@@ -5,14 +5,21 @@ from fastapi import HTTPException, status
 
 from app.database import get_db
 from app.models.body import BodyMeasurementCreate, BodyMeasurementResponse, BodyMeasurementUpdate
+from app.utils.timezone import convert_date_time_to_tz
 
 
-def _row_to_response(row) -> BodyMeasurementResponse:
+def _row_to_response(row, timezone: str | None = None) -> BodyMeasurementResponse:
     """Convert a database row to a BodyMeasurementResponse."""
+    row_date = date.fromisoformat(row["date"]) if isinstance(row["date"], str) else row["date"]
+    row_time = time.fromisoformat(row["time"]) if isinstance(row["time"], str) else row["time"]
+
+    # Convert to user timezone if specified
+    converted_date, converted_time = convert_date_time_to_tz(row_date, row_time, timezone)
+
     return BodyMeasurementResponse(
         id=row["id"],
-        date=date.fromisoformat(row["date"]),
-        time=time.fromisoformat(row["time"]),
+        date=converted_date,
+        time=converted_time,
         weight_lbs=row["weight_lbs"],
         waist_cm=row["waist_cm"],
         fat_mass_lbs=row["fat_mass_lbs"] if "fat_mass_lbs" in row.keys() else None,
@@ -50,7 +57,7 @@ async def create_measurement(data: BodyMeasurementCreate, db_path: str | None = 
     return await get_measurement(measurement_id, db_path)
 
 
-async def get_measurement(measurement_id: int, db_path: str | None = None) -> BodyMeasurementResponse:
+async def get_measurement(measurement_id: int, timezone: str | None = None, db_path: str | None = None) -> BodyMeasurementResponse:
     """Get a body measurement by ID."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -65,10 +72,10 @@ async def get_measurement(measurement_id: int, db_path: str | None = None) -> Bo
                 detail=f"Body measurement with id {measurement_id} not found",
             )
 
-        return _row_to_response(row)
+        return _row_to_response(row, timezone)
 
 
-async def get_measurements(measurement_date: date, db_path: str | None = None) -> list[BodyMeasurementResponse]:
+async def get_measurements(measurement_date: date, timezone: str | None = None, db_path: str | None = None) -> list[BodyMeasurementResponse]:
     """Get all body measurements for a date."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -77,10 +84,10 @@ async def get_measurements(measurement_date: date, db_path: str | None = None) -
         )
         rows = await cursor.fetchall()
 
-        return [_row_to_response(row) for row in rows]
+        return [_row_to_response(row, timezone) for row in rows]
 
 
-async def get_latest_measurement(db_path: str | None = None) -> Optional[BodyMeasurementResponse]:
+async def get_latest_measurement(timezone: str | None = None, db_path: str | None = None) -> Optional[BodyMeasurementResponse]:
     """Get the most recent body measurement."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -91,7 +98,7 @@ async def get_latest_measurement(db_path: str | None = None) -> Optional[BodyMea
         if row is None:
             return None
 
-        return _row_to_response(row)
+        return _row_to_response(row, timezone)
 
 
 async def get_measurements_range(
@@ -99,6 +106,7 @@ async def get_measurements_range(
     end_date: date,
     limit: int = 100,
     offset: int = 0,
+    timezone: str | None = None,
     db_path: str | None = None,
 ) -> list[BodyMeasurementResponse]:
     """Get body measurements within a date range with pagination."""
@@ -109,7 +117,7 @@ async def get_measurements_range(
         )
         rows = await cursor.fetchall()
 
-        return [_row_to_response(row) for row in rows]
+        return [_row_to_response(row, timezone) for row in rows]
 
 
 async def get_summary(db_path: str | None = None) -> dict:

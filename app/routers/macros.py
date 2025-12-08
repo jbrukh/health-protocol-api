@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from app.auth import verify_token
 from app.models.macro import MacroTodayResponse, MacroRemainingResponse, MacroHistoryResponse
 from app.services import macro_service
+from app.services.profile_service import get_profile
 
 router = APIRouter()
 
@@ -40,4 +41,5 @@ async def get_macro_history(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    return await macro_service.get_macro_history(start_date, end_date, limit, offset)
+    profile = await get_profile()
+    return await macro_service.get_macro_history(start_date, end_date, limit, offset, timezone=profile.timezone)

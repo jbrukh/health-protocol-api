@@ -3,15 +3,26 @@ from typing import Optional
 
 from app.database import get_db
 from app.models.sleep import SleepResponse
+from app.utils.timezone import convert_datetime_to_tz
 
 
-def _row_to_response(row) -> SleepResponse:
+def _row_to_response(row, timezone: str | None = None) -> SleepResponse:
     """Convert a database row to a SleepResponse."""
+    sleep_start = datetime.fromisoformat(row["sleep_start"]) if row["sleep_start"] else None
+    sleep_end = datetime.fromisoformat(row["sleep_end"]) if row["sleep_end"] else None
+
+    # Convert to user timezone if specified
+    if timezone:
+        if sleep_start:
+            sleep_start = convert_datetime_to_tz(sleep_start, timezone)
+        if sleep_end:
+            sleep_end = convert_datetime_to_tz(sleep_end, timezone)
+
     return SleepResponse(
         id=row["id"],
         date=row["date"],
-        sleep_start=datetime.fromisoformat(row["sleep_start"]) if row["sleep_start"] else None,
-        sleep_end=datetime.fromisoformat(row["sleep_end"]) if row["sleep_end"] else None,
+        sleep_start=sleep_start,
+        sleep_end=sleep_end,
         duration_minutes=row["duration_minutes"],
         deep_minutes=row["deep_minutes"],
         light_minutes=row["light_minutes"],
@@ -22,7 +33,7 @@ def _row_to_response(row) -> SleepResponse:
     )
 
 
-async def get_sleep(sleep_date: date, db_path: str | None = None) -> Optional[SleepResponse]:
+async def get_sleep(sleep_date: date, timezone: str | None = None, db_path: str | None = None) -> Optional[SleepResponse]:
     """Get sleep data for a specific date."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -32,10 +43,10 @@ async def get_sleep(sleep_date: date, db_path: str | None = None) -> Optional[Sl
         row = await cursor.fetchone()
         if row is None:
             return None
-        return _row_to_response(row)
+        return _row_to_response(row, timezone)
 
 
-async def get_latest(db_path: str | None = None) -> Optional[SleepResponse]:
+async def get_latest(timezone: str | None = None, db_path: str | None = None) -> Optional[SleepResponse]:
     """Get the most recent sleep record."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -44,11 +55,11 @@ async def get_latest(db_path: str | None = None) -> Optional[SleepResponse]:
         row = await cursor.fetchone()
         if row is None:
             return None
-        return _row_to_response(row)
+        return _row_to_response(row, timezone)
 
 
 async def get_sleep_range(
-    start_date: date, end_date: date, db_path: str | None = None
+    start_date: date, end_date: date, timezone: str | None = None, db_path: str | None = None
 ) -> list[SleepResponse]:
     """Get sleep data within a date range."""
     async with get_db(db_path) as db:
@@ -57,4 +68,4 @@ async def get_sleep_range(
             (start_date.isoformat(), end_date.isoformat()),
         )
         rows = await cursor.fetchall()
-        return [_row_to_response(row) for row in rows]
+        return [_row_to_response(row, timezone) for row in rows]

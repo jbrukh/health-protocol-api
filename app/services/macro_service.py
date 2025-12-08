@@ -115,6 +115,7 @@ async def get_macro_history(
     end_date: date,
     limit: int = 100,
     offset: int = 0,
+    timezone: str | None = None,
     db_path: str | None = None,
 ) -> MacroHistoryResponse:
     """Get macro and body measurement history for a date range with pagination."""
@@ -122,7 +123,7 @@ async def get_macro_history(
     total_days = (end_date - start_date).days + 1
 
     # Get body measurements for the full range
-    body_measurements = await get_measurements_range(start_date, end_date, limit=1000, offset=0, db_path=db_path)
+    body_measurements = await get_measurements_range(start_date, end_date, limit=1000, offset=0, timezone=timezone, db_path=db_path)
 
     body_by_date: dict[date, list] = {}
     for m in body_measurements:
