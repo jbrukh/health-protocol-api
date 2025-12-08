@@ -132,13 +132,24 @@ async def subscribe(_: str = Depends(verify_token)):
     )
 
 
+@router.head("/webhook")
+async def webhook_head():
+    """Handle Withings callback URL verification via HEAD request."""
+    return {}
+
+
 @router.post("/webhook")
 async def webhook(request: Request, background_tasks: BackgroundTasks):
     """Receive Withings webhook notifications."""
     body = await request.body()
+
+    # Handle verification requests (empty body) - Withings sends these to verify the URL
+    if not body or body == b"":
+        return {"status": "ok"}
+
     signature = request.headers.get("X-Withings-Signature", "")
 
-    # Verify signature
+    # Verify signature for actual notifications
     if not withings_service.verify_signature(body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
 
