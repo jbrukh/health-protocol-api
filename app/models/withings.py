@@ -41,6 +41,11 @@ class WithingsDisconnectResponse(BaseModel):
     webhooks_unsubscribed: int
 
 
+class WithingsSubscribeResponse(BaseModel):
+    message: str
+    subscriptions: list[int]
+
+
 class WithingsBackfillRequest(BaseModel):
     start_date: str  # YYYY-MM-DD
     end_date: str  # YYYY-MM-DD

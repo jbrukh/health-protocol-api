@@ -12,6 +12,7 @@ from app.models.withings import (
     WithingsStatusResponse,
     WithingsRefreshResponse,
     WithingsDisconnectResponse,
+    WithingsSubscribeResponse,
     WithingsBackfillRequest,
     WithingsBackfillResponse,
 )
@@ -113,6 +114,20 @@ async def disconnect(_: str = Depends(verify_token)):
     return WithingsDisconnectResponse(
         message="Withings disconnected",
         webhooks_unsubscribed=count,
+    )
+
+
+@router.post("/subscribe", response_model=WithingsSubscribeResponse)
+async def subscribe(_: str = Depends(verify_token)):
+    """Subscribe to Withings webhook notifications."""
+    tokens = await withings_service.get_tokens()
+    if not tokens:
+        raise HTTPException(status_code=400, detail="Not connected to Withings")
+
+    subscriptions = await withings_service.subscribe_all()
+    return WithingsSubscribeResponse(
+        message="Subscribed to webhooks",
+        subscriptions=subscriptions,
     )
 
 
