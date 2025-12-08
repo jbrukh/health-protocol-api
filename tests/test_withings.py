@@ -273,6 +273,8 @@ class TestWithingsService:
         """Test subscribing to webhook."""
         from app.config import settings
         monkeypatch.setattr(settings, "base_url", "https://test.example.com")
+        monkeypatch.setattr(settings, "withings_client_id", "test_client_id")
+        monkeypatch.setattr(settings, "withings_client_secret", "test_client_secret")
 
         expires_at = datetime.utcnow() + timedelta(hours=3)
         await withings_service.save_tokens(
@@ -295,6 +297,8 @@ class TestWithingsService:
         """Test subscribing when already subscribed (status 294)."""
         from app.config import settings
         monkeypatch.setattr(settings, "base_url", "https://test.example.com")
+        monkeypatch.setattr(settings, "withings_client_id", "test_client_id")
+        monkeypatch.setattr(settings, "withings_client_secret", "test_client_secret")
 
         expires_at = datetime.utcnow() + timedelta(hours=3)
         await withings_service.save_tokens(
@@ -323,6 +327,8 @@ class TestWithingsService:
         """Test unsubscribing from webhook."""
         from app.config import settings
         monkeypatch.setattr(settings, "base_url", "https://test.example.com")
+        monkeypatch.setattr(settings, "withings_client_id", "test_client_id")
+        monkeypatch.setattr(settings, "withings_client_secret", "test_client_secret")
 
         expires_at = datetime.utcnow() + timedelta(hours=3)
         await withings_service.save_tokens(
@@ -343,6 +349,10 @@ class TestWithingsService:
     @pytest.mark.asyncio
     async def test_get_subscriptions_success(self, test_db, monkeypatch):
         """Test getting list of subscriptions."""
+        from app.config import settings
+        monkeypatch.setattr(settings, "withings_client_id", "test_client_id")
+        monkeypatch.setattr(settings, "withings_client_secret", "test_client_secret")
+
         expires_at = datetime.utcnow() + timedelta(hours=3)
         await withings_service.save_tokens(
             access_token="valid_access",

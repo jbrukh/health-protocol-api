@@ -1,9 +1,27 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+import hmac
+import secrets
 import httpx
 
 from app.database import get_db
 from app.config import settings
 from app.models.withings import WithingsTokens
+
+
+def generate_nonce() -> str:
+    """Generate a random nonce for Withings API calls."""
+    return secrets.token_hex(16)
+
+
+def generate_signature(action: str, nonce: str) -> str:
+    """Generate HMAC-SHA256 signature for Withings API calls."""
+    data = f"{action},{settings.withings_client_id},{nonce}"
+    return hmac.new(
+        settings.withings_client_secret.encode(),
+        data.encode(),
+        hashlib.sha256
+    ).hexdigest()
 
 WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2"
 WITHINGS_NOTIFY_URL = "https://wbsapi.withings.net/notify"
@@ -176,6 +194,8 @@ async def subscribe_webhook(appli: int) -> bool:
         return False
 
     callback_url = f"{settings.base_url}/withings/webhook"
+    nonce = generate_nonce()
+    signature = generate_signature("subscribe", nonce)
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -184,6 +204,9 @@ async def subscribe_webhook(appli: int) -> bool:
                 "action": "subscribe",
                 "callbackurl": callback_url,
                 "appli": appli,
+                "client_id": settings.withings_client_id,
+                "nonce": nonce,
+                "signature": signature,
             },
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -200,6 +223,8 @@ async def unsubscribe_webhook(appli: int) -> bool:
         return False
 
     callback_url = f"{settings.base_url}/withings/webhook"
+    nonce = generate_nonce()
+    signature = generate_signature("revoke", nonce)
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -208,6 +233,9 @@ async def unsubscribe_webhook(appli: int) -> bool:
                 "action": "revoke",
                 "callbackurl": callback_url,
                 "appli": appli,
+                "client_id": settings.withings_client_id,
+                "nonce": nonce,
+                "signature": signature,
             },
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -242,10 +270,18 @@ async def get_subscriptions() -> list[int]:
     if not token:
         return []
 
+    nonce = generate_nonce()
+    signature = generate_signature("list", nonce)
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             WITHINGS_NOTIFY_URL,
-            data={"action": "list"},
+            data={
+                "action": "list",
+                "client_id": settings.withings_client_id,
+                "nonce": nonce,
+                "signature": signature,
+            },
             headers={"Authorization": f"Bearer {token}"},
         )
 
