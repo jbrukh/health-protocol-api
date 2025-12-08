@@ -3,14 +3,21 @@ from typing import Optional
 
 from app.database import get_db
 from app.models.blood_pressure import BloodPressureResponse
+from app.utils.timezone import convert_date_time_to_tz
 
 
-def _row_to_response(row) -> BloodPressureResponse:
+def _row_to_response(row, timezone: str | None = None) -> BloodPressureResponse:
     """Convert a database row to a BloodPressureResponse."""
+    row_date = date.fromisoformat(row["date"]) if isinstance(row["date"], str) else row["date"]
+    row_time = time.fromisoformat(row["time"]) if isinstance(row["time"], str) else row["time"]
+
+    # Convert to user timezone if specified
+    converted_date, converted_time = convert_date_time_to_tz(row_date, row_time, timezone)
+
     return BloodPressureResponse(
         id=row["id"],
-        date=row["date"],
-        time=row["time"],
+        date=converted_date.isoformat(),
+        time=converted_time.isoformat(),
         systolic=row["systolic"],
         diastolic=row["diastolic"],
         heart_rate=row["heart_rate"],
@@ -19,7 +26,7 @@ def _row_to_response(row) -> BloodPressureResponse:
     )
 
 
-async def get_readings(measurement_date: date, db_path: str | None = None) -> list[BloodPressureResponse]:
+async def get_readings(measurement_date: date, timezone: str | None = None, db_path: str | None = None) -> list[BloodPressureResponse]:
     """Get all blood pressure readings for a date."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -27,10 +34,10 @@ async def get_readings(measurement_date: date, db_path: str | None = None) -> li
             (measurement_date.isoformat(),),
         )
         rows = await cursor.fetchall()
-        return [_row_to_response(row) for row in rows]
+        return [_row_to_response(row, timezone) for row in rows]
 
 
-async def get_latest(db_path: str | None = None) -> Optional[BloodPressureResponse]:
+async def get_latest(timezone: str | None = None, db_path: str | None = None) -> Optional[BloodPressureResponse]:
     """Get the most recent blood pressure reading."""
     async with get_db(db_path) as db:
         cursor = await db.execute(
@@ -39,7 +46,7 @@ async def get_latest(db_path: str | None = None) -> Optional[BloodPressureRespon
         row = await cursor.fetchone()
         if row is None:
             return None
-        return _row_to_response(row)
+        return _row_to_response(row, timezone)
 
 
 async def get_readings_range(
@@ -47,6 +54,7 @@ async def get_readings_range(
     end_date: date,
     limit: int = 100,
     offset: int = 0,
+    timezone: str | None = None,
     db_path: str | None = None,
 ) -> list[BloodPressureResponse]:
     """Get blood pressure readings within a date range with pagination."""
@@ -56,7 +64,7 @@ async def get_readings_range(
             (start_date.isoformat(), end_date.isoformat(), limit, offset),
         )
         rows = await cursor.fetchall()
-        return [_row_to_response(row) for row in rows]
+        return [_row_to_response(row, timezone) for row in rows]
 
 
 async def get_summary(db_path: str | None = None) -> dict:

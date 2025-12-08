@@ -20,6 +20,7 @@ class ProfileResponse(BaseModel):
     birthdate: Optional[date] = None
     age: Optional[int] = None
     height_inches: Optional[float] = None
+    timezone: Optional[str] = None  # e.g., "America/New_York"
     targets: ProfileTargets
     updated_at: Optional[datetime] = None
 
@@ -27,6 +28,7 @@ class ProfileResponse(BaseModel):
 class ProfileUpdate(BaseModel):
     birthdate: Optional[date] = None
     height_inches: Optional[float] = None
+    timezone: Optional[str] = None  # IANA timezone, e.g., "America/New_York"
     calories_min: Optional[int] = None
     calories_max: Optional[int] = None
     protein_min_g: Optional[int] = None

@@ -40,6 +40,7 @@ async def get_profile(db_path: str | None = None) -> ProfileResponse:
             birthdate=birthdate,
             age=compute_age(birthdate),
             height_inches=row["height_inches"],
+            timezone=row["timezone"] if "timezone" in row.keys() else None,
             targets=ProfileTargets(
                 calories_min=row["calories_min"],
                 calories_max=row["calories_max"],

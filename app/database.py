@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     birthdate DATE,
     height_inches REAL,
+    timezone TEXT,
     calories_min INTEGER NOT NULL DEFAULT 1800,
     calories_max INTEGER NOT NULL DEFAULT 2200,
     protein_min_g INTEGER NOT NULL DEFAULT 150,
@@ -253,6 +254,17 @@ async def init_db(db_path: str | None = None):
                     await db.execute(f"ALTER TABLE body_measurements ADD COLUMN {col_name} {col_type}")
 
             await db.commit()
+
+        # Migrate user_profile table to add timezone column
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_profile'")
+        if await cursor.fetchone():
+            cursor = await db.execute("PRAGMA table_info(user_profile)")
+            columns = await cursor.fetchall()
+            column_names = [col[1] for col in columns]
+
+            if "timezone" not in column_names:
+                await db.execute("ALTER TABLE user_profile ADD COLUMN timezone TEXT")
+                await db.commit()
 
 
 @asynccontextmanager

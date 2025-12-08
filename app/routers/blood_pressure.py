@@ -10,6 +10,7 @@ from app.models.blood_pressure import (
     BloodPressureSummaryResponse,
 )
 from app.services import blood_pressure_service
+from app.services.profile_service import get_profile
 
 router = APIRouter()
 
@@ -28,7 +29,10 @@ async def get_readings(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    readings = await blood_pressure_service.get_readings_range(start_date, end_date, limit, offset)
+    profile = await get_profile()
+    readings = await blood_pressure_service.get_readings_range(
+        start_date, end_date, limit, offset, timezone=profile.timezone
+    )
     return BloodPressureListResponse(
         readings=readings,
         total_in_range=len(readings),
@@ -47,7 +51,8 @@ async def get_summary(_: str = Depends(verify_token)):
 @router.get("/latest", response_model=BloodPressureResponse | None)
 async def get_latest(_: str = Depends(verify_token)):
     """Get the most recent blood pressure reading."""
-    reading = await blood_pressure_service.get_latest()
+    profile = await get_profile()
+    reading = await blood_pressure_service.get_latest(timezone=profile.timezone)
     if reading is None:
         raise HTTPException(status_code=404, detail="No blood pressure readings found")
     return reading
