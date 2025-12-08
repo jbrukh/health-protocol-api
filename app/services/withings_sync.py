@@ -51,8 +51,12 @@ def parse_withings_value(value: int, unit: int) -> float:
     return value * (10 ** unit)
 
 
-async def fetch_measurements(start_date: date, end_date: date, meas_type: int | None = None) -> list[dict]:
-    """Fetch measurements from Withings Measure API with pagination support."""
+async def fetch_measurements(start_date: date, end_date: date, meas_type: int | None = None, category: int | None = None) -> list[dict]:
+    """Fetch measurements from Withings Measure API with pagination support.
+
+    Args:
+        category: 1 = real measures, 2 = user objectives (BP uses category 1)
+    """
     token = await withings_service.get_valid_token()
     if not token:
         logger.error("No valid token for fetching measurements")
@@ -70,6 +74,8 @@ async def fetch_measurements(start_date: date, end_date: date, meas_type: int | 
             }
             if meas_type:
                 params["meastype"] = meas_type
+            if category:
+                params["category"] = category
             if offset:
                 params["offset"] = offset
 
@@ -498,6 +504,8 @@ async def sync_sleep(sleep_data: list[dict]) -> int:
 
 async def sync_by_appli(appli: int, startdate: int | None = None, enddate: int | None = None) -> int:
     """Sync data for a specific Withings appli code. Returns count of synced records."""
+    logger.info(f"sync_by_appli called: appli={appli}, startdate={startdate}, enddate={enddate}")
+
     # Default to last 7 days if no dates provided
     if startdate and enddate:
         start = date.fromtimestamp(startdate)
@@ -506,12 +514,18 @@ async def sync_by_appli(appli: int, startdate: int | None = None, enddate: int |
         end = date.today()
         start = date.fromordinal(end.toordinal() - 7)
 
+    logger.info(f"Syncing appli={appli} from {start} to {end}")
+
     if appli == 1:  # Weight/Body composition
         groups = await fetch_measurements(start, end)
+        logger.info(f"Fetched {len(groups)} measurement groups for body")
         return await sync_body_measurements(groups)
     elif appli == 4:  # Blood pressure
         groups = await fetch_measurements(start, end)
-        return await sync_blood_pressure(groups)
+        logger.info(f"Fetched {len(groups)} measurement groups for BP")
+        count = await sync_blood_pressure(groups)
+        logger.info(f"Synced {count} blood pressure records")
+        return count
     elif appli == 16:  # Activity
         activities = await fetch_activity(start, end)
         return await sync_activity(activities)
