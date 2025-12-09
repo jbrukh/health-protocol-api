@@ -80,3 +80,13 @@ async def generate_missing_snapshots(
         snapshots[current] = await get_or_create_snapshot(current, db_path)
         current = current + timedelta(days=1)
     return snapshots
+
+
+async def invalidate_snapshot(snapshot_date: date, db_path: str | None = None) -> None:
+    """Delete a cached snapshot so it will be recomputed on next access."""
+    async with get_db(db_path) as db:
+        await db.execute(
+            "DELETE FROM daily_snapshots WHERE date = ?",
+            (snapshot_date.isoformat(),),
+        )
+        await db.commit()

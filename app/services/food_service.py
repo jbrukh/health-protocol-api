@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from app.database import get_db
 from app.models.food import FoodCreate, FoodResponse, FoodFromRecipe, FoodUpdate
 from app.services.recipe_service import get_recipe
+from app.services.snapshot_service import invalidate_snapshot
 
 
 async def create_food(data: FoodCreate, db_path: str | None = None) -> FoodResponse:
@@ -31,6 +32,9 @@ async def create_food(data: FoodCreate, db_path: str | None = None) -> FoodRespo
         )
         await db.commit()
         food_id = cursor.lastrowid
+
+    # Invalidate cached snapshot for this date
+    await invalidate_snapshot(data.date, db_path)
 
     return await get_food(food_id, db_path)
 
@@ -71,6 +75,9 @@ async def create_foods_from_recipe(data: FoodFromRecipe, db_path: str | None = N
             )
             created_foods.append(cursor.lastrowid)
         await db.commit()
+
+    # Invalidate cached snapshot for this date
+    await invalidate_snapshot(data.date, db_path)
 
     return [await get_food(food_id, db_path) for food_id in created_foods]
 
@@ -148,7 +155,7 @@ async def get_foods(
 
 async def update_food(food_id: int, data: FoodUpdate, db_path: str | None = None) -> FoodResponse:
     """Update a food entry."""
-    await get_food(food_id, db_path)
+    existing_food = await get_food(food_id, db_path)
 
     async with get_db(db_path) as db:
         updates = []
@@ -164,16 +171,22 @@ async def update_food(food_id: int, data: FoodUpdate, db_path: str | None = None
             await db.execute(query, values)
             await db.commit()
 
+    # Invalidate cached snapshot for this date
+    await invalidate_snapshot(existing_food.date, db_path)
+
     return await get_food(food_id, db_path)
 
 
 async def delete_food(food_id: int, db_path: str | None = None) -> None:
     """Delete a food entry."""
-    await get_food(food_id, db_path)
+    existing_food = await get_food(food_id, db_path)
 
     async with get_db(db_path) as db:
         await db.execute("DELETE FROM foods WHERE id = ?", (food_id,))
         await db.commit()
+
+    # Invalidate cached snapshot for this date
+    await invalidate_snapshot(existing_food.date, db_path)
 
 
 async def delete_foods_by_marker(food_date: date, marker: str, db_path: str | None = None) -> int:
@@ -184,7 +197,13 @@ async def delete_foods_by_marker(food_date: date, marker: str, db_path: str | No
             (food_date.isoformat(), marker),
         )
         await db.commit()
-        return cursor.rowcount
+        count = cursor.rowcount
+
+    # Invalidate cached snapshot for this date
+    if count > 0:
+        await invalidate_snapshot(food_date, db_path)
+
+    return count
 
 
 async def clear_foods_by_date(food_date: date, db_path: str | None = None) -> int:
@@ -195,4 +214,10 @@ async def clear_foods_by_date(food_date: date, db_path: str | None = None) -> in
             (food_date.isoformat(),),
         )
         await db.commit()
-        return cursor.rowcount
+        count = cursor.rowcount
+
+    # Invalidate cached snapshot for this date
+    if count > 0:
+        await invalidate_snapshot(food_date, db_path)
+
+    return count
