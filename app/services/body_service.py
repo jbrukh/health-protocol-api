@@ -54,7 +54,7 @@ async def create_measurement(data: BodyMeasurementCreate, db_path: str | None = 
         await db.commit()
         measurement_id = cursor.lastrowid
 
-    return await get_measurement(measurement_id, db_path)
+    return await get_measurement(measurement_id, db_path=db_path)
 
 
 async def get_measurement(measurement_id: int, timezone: str | None = None, db_path: str | None = None) -> BodyMeasurementResponse:
@@ -167,7 +167,7 @@ async def update_measurement(
     measurement_id: int, data: BodyMeasurementUpdate, db_path: str | None = None
 ) -> BodyMeasurementResponse:
     """Update a body measurement."""
-    await get_measurement(measurement_id, db_path)
+    await get_measurement(measurement_id, db_path=db_path)
 
     async with get_db(db_path) as db:
         updates = []
@@ -186,12 +186,12 @@ async def update_measurement(
             await db.execute(query, values)
             await db.commit()
 
-    return await get_measurement(measurement_id, db_path)
+    return await get_measurement(measurement_id, db_path=db_path)
 
 
 async def delete_measurement(measurement_id: int, db_path: str | None = None) -> None:
     """Delete a body measurement."""
-    await get_measurement(measurement_id, db_path)
+    await get_measurement(measurement_id, db_path=db_path)
 
     async with get_db(db_path) as db:
         await db.execute("DELETE FROM body_measurements WHERE id = ?", (measurement_id,))

@@ -16,6 +16,8 @@ def generate_nonce() -> str:
 
 def generate_signature(action: str, nonce: str) -> str:
     """Generate HMAC-SHA256 signature for Withings API calls."""
+    if not settings.withings_client_secret:
+        return ""
     data = f"{action},{settings.withings_client_id},{nonce}"
     return hmac.new(
         settings.withings_client_secret.encode(),
@@ -189,6 +191,9 @@ async def exchange_code(code: str) -> WithingsTokens:
 
 async def subscribe_webhook(appli: int) -> tuple[bool, dict]:
     """Subscribe to webhook notifications for a data type. Returns (success, response)."""
+    if not settings.withings_client_id or not settings.withings_client_secret:
+        return False, {"error": "not_configured"}
+
     token = await get_valid_token()
     if not token:
         return False, {"error": "no_token"}
@@ -219,6 +224,9 @@ async def subscribe_webhook(appli: int) -> tuple[bool, dict]:
 
 async def unsubscribe_webhook(appli: int) -> bool:
     """Unsubscribe from webhook notifications for a data type."""
+    if not settings.withings_client_id or not settings.withings_client_secret:
+        return False
+
     token = await get_valid_token()
     if not token:
         return False
@@ -270,6 +278,9 @@ async def unsubscribe_all() -> int:
 
 async def get_subscriptions() -> list[int]:
     """List current webhook subscriptions."""
+    if not settings.withings_client_id or not settings.withings_client_secret:
+        return []
+
     token = await get_valid_token()
     if not token:
         return []
@@ -299,6 +310,9 @@ async def get_subscriptions() -> list[int]:
 
 async def revoke_token() -> bool:
     """Revoke the current access token with Withings."""
+    if not settings.withings_client_id or not settings.withings_client_secret:
+        return True
+
     tokens = await get_tokens()
     if not tokens:
         return True

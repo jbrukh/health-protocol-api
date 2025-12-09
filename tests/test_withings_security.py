@@ -94,6 +94,26 @@ class TestWebhookSecurity:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
+    async def test_webhook_accepts_valid_signature(self, client, test_db, monkeypatch):
+        """Webhook should accept valid signature and return ok."""
+        from app.config import settings
+        monkeypatch.setattr(settings, "withings_client_secret", "secret")
+
+        body = b"userid=12345&appli=1"
+        signature = hmac.new(b"secret", body, hashlib.sha256).hexdigest()
+
+        response = await client.post(
+            "/withings/webhook",
+            content=body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Withings-Signature": signature,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+    @pytest.mark.asyncio
     async def test_verify_signature_timing_safe(self, monkeypatch):
         """Verify signature comparison is timing-safe (uses hmac.compare_digest)."""
         from app.config import settings

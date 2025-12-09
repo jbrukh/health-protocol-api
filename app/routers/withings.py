@@ -153,10 +153,8 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     import logging
     logging.info(f"Withings webhook received: body={body}, signature={signature}, headers={dict(request.headers)}")
 
-    # TODO: Re-enable signature verification once we understand Withings format
-    # For now, skip verification to allow webhooks through
-    # if not withings_service.verify_signature(body, signature):
-    #     raise HTTPException(status_code=401, detail="Invalid signature")
+    if not signature or not withings_service.verify_signature(body, signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
 
     # Parse form data
     form = await request.form()

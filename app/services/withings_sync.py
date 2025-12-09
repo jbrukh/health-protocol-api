@@ -3,7 +3,7 @@ Withings data synchronization service.
 
 Handles fetching data from Withings API and storing it in local database.
 """
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time, timedelta, timezone
 from typing import Any
 import httpx
 import logging
@@ -166,7 +166,7 @@ async def sync_body_measurements(measure_groups: list[dict]) -> int:
         bone_mass_lbs = kg_to_lbs(bone_mass_kg) if bone_mass_kg else None
 
         # Parse timestamp
-        dt = datetime.fromtimestamp(timestamp)
+        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).replace(tzinfo=None)
         meas_date = dt.date().isoformat()
         meas_time = dt.time().isoformat()
 
@@ -225,7 +225,7 @@ async def sync_blood_pressure(measure_groups: list[dict]) -> int:
             continue
 
         # Parse timestamp
-        dt = datetime.fromtimestamp(timestamp)
+        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).replace(tzinfo=None)
         meas_date = dt.date().isoformat()
         meas_time = dt.time().isoformat()
 
@@ -473,8 +473,8 @@ async def sync_sleep(sleep_data: list[dict]) -> int:
         enddate = sleep.get("enddate")
         data = sleep.get("data", {})
 
-        sleep_start = datetime.fromtimestamp(startdate).isoformat() if startdate else None
-        sleep_end = datetime.fromtimestamp(enddate).isoformat() if enddate else None
+        sleep_start = datetime.fromtimestamp(startdate, tz=timezone.utc).replace(tzinfo=None).isoformat() if startdate else None
+        sleep_end = datetime.fromtimestamp(enddate, tz=timezone.utc).replace(tzinfo=None).isoformat() if enddate else None
 
         # Duration in seconds, convert to minutes
         duration_seconds = data.get("durationtosleep", 0) + data.get("durationtowakeup", 0)

@@ -1,6 +1,8 @@
 """Tests for Withings data synchronization."""
+import os
+import time
 import pytest
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from unittest.mock import patch, AsyncMock
 
 from app.services import withings_sync
@@ -83,6 +85,44 @@ class TestSyncBodyMeasurements:
 
         assert count1 == 1
         assert count2 == 0  # Duplicate skipped
+
+    @pytest.mark.asyncio
+    async def test_sync_body_measurements_uses_utc(self, test_db, monkeypatch):
+        """Timestamps should be interpreted in UTC regardless of server timezone."""
+        original_tz = os.environ.get("TZ")
+        os.environ["TZ"] = "US/Pacific"
+        try:
+            time.tzset()
+        except AttributeError:
+            # Windows may not support tzset; skip if not available
+            pytest.skip("tzset not available on this platform")
+
+        try:
+            ts = datetime(2024, 1, 15, 8, 0, tzinfo=timezone.utc).timestamp()
+            measure_groups = [
+                {
+                    "grpid": 54321,
+                    "date": int(ts),
+                    "measures": [{"type": 1, "value": 80000, "unit": -3}],
+                }
+            ]
+
+            await withings_sync.sync_body_measurements(measure_groups)
+            async with get_db() as db:
+                cursor = await db.execute("SELECT date, time FROM body_measurements WHERE withings_id = '54321'")
+                row = await cursor.fetchone()
+
+            assert row["date"] == "2024-01-15"
+            assert row["time"] == "08:00:00"
+        finally:
+            if original_tz is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = original_tz
+            try:
+                time.tzset()
+            except AttributeError:
+                pass
 
 
 class TestSyncBloodPressure:

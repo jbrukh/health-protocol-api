@@ -1,6 +1,10 @@
 import pytest
 from datetime import date
+from fastapi import HTTPException
 
+from app.database import init_db
+from app.models.body import BodyMeasurementCreate, BodyMeasurementUpdate
+from app.services import body_service
 
 @pytest.mark.asyncio
 async def test_create_measurement(client, auth_headers):
@@ -124,3 +128,30 @@ async def test_delete_measurement(client, auth_headers):
 
     response = await client.delete(f"/body/{measurement_id}", headers=auth_headers)
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_update_delete_respect_db_path(tmp_path):
+    """Update/delete should honor explicit db_path instead of default database."""
+    db_path = tmp_path / "alt_body.db"
+    await init_db(str(db_path))
+
+    created = await body_service.create_measurement(
+        BodyMeasurementCreate(
+            date=date(2024, 1, 1),
+            time="08:00:00",
+            weight_lbs=180.0,
+        ),
+        db_path=str(db_path),
+    )
+
+    updated = await body_service.update_measurement(
+        created.id,
+        BodyMeasurementUpdate(weight_lbs=181.5),
+        db_path=str(db_path),
+    )
+    assert updated.weight_lbs == 181.5
+
+    await body_service.delete_measurement(created.id, db_path=str(db_path))
+    with pytest.raises(HTTPException):
+        await body_service.get_measurement(created.id, db_path=str(db_path))
