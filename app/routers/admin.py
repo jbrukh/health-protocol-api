@@ -8,11 +8,14 @@ router = APIRouter()
 
 @router.delete("/clear-foods", status_code=200)
 async def clear_foods(_: str = Depends(verify_token)) -> dict:
-    """Clear all food entries."""
+    """Clear all food entries and their cached snapshots."""
     async with get_db() as db:
         cursor = await db.execute("DELETE FROM foods")
+        foods_deleted = cursor.rowcount
+        # Also clear snapshots since they're now invalid
+        await db.execute("DELETE FROM daily_snapshots")
         await db.commit()
-        return {"deleted": cursor.rowcount}
+        return {"deleted": foods_deleted}
 
 
 @router.delete("/clear-exercises", status_code=200)
