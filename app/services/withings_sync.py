@@ -568,3 +568,31 @@ async def backfill_full_history() -> dict[str, int]:
     end = date.today()
     start = date.fromordinal(end.toordinal() - 730)  # ~2 years
     return await backfill_all(start, end)
+
+
+async def safe_sync_by_appli(appli: int, startdate: int | None = None, enddate: int | None = None) -> int:
+    """Safe wrapper for sync_by_appli that catches and logs exceptions.
+
+    Use this for background tasks to prevent silent failures.
+    """
+    try:
+        count = await sync_by_appli(appli, startdate, enddate)
+        logger.info(f"Background sync completed: appli={appli}, synced={count} records")
+        return count
+    except Exception as e:
+        logger.exception(f"Background sync failed: appli={appli}, error={e}")
+        return 0
+
+
+async def safe_backfill_full_history() -> dict[str, int]:
+    """Safe wrapper for backfill_full_history that catches and logs exceptions.
+
+    Use this for background tasks to prevent silent failures.
+    """
+    try:
+        counts = await backfill_full_history()
+        logger.info(f"Background backfill completed: {counts}")
+        return counts
+    except Exception as e:
+        logger.exception(f"Background backfill failed: {e}")
+        return {"body_measurements": 0, "blood_pressure": 0, "daily_activity": 0, "sleep": 0}

@@ -59,10 +59,10 @@ async def oauth_callback(code: str, state: str | None = None, background_tasks: 
     # Subscribe to webhooks
     subscriptions, _ = await withings_service.subscribe_all()
 
-    # Trigger backfill in background
+    # Trigger backfill in background (using safe wrapper to log errors)
     backfill_started = False
     if background_tasks:
-        background_tasks.add_task(withings_sync.backfill_full_history)
+        background_tasks.add_task(withings_sync.safe_backfill_full_history)
         backfill_started = True
 
     return WithingsCallbackResponse(
@@ -162,10 +162,10 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     startdate = form.get("startdate")
     enddate = form.get("enddate")
 
-    # Dispatch sync in background
+    # Dispatch sync in background (using safe wrapper to log errors)
     start_ts = int(startdate) if startdate else None
     end_ts = int(enddate) if enddate else None
-    background_tasks.add_task(withings_sync.sync_by_appli, appli, start_ts, end_ts)
+    background_tasks.add_task(withings_sync.safe_sync_by_appli, appli, start_ts, end_ts)
 
     return {"status": "ok"}
 
