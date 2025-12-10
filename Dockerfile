@@ -15,6 +15,7 @@ COPY app/ app/
 # Set environment defaults
 ENV HEALTH_TRACKER_DATABASE_PATH=/data/health.db
 ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
 
 # Expose port
 EXPOSE 8000

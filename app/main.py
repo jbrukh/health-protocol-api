@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
+from app.logging_config import configure_logging
 from app.routers import (
     profile, ingredients, recipes, foods, macros, body, exercises,
     supplements, phases, admin, withings, blood_pressure, activity, sleep
@@ -23,6 +24,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Configure logging (JSON to stdout for Railway compatibility)
+configure_logging()
 
 # CORS configuration - use environment variable for allowed origins
 # Default to restrictive setting; set CORS_ORIGINS="*" in dev if needed
