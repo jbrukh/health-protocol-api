@@ -12,5 +12,4 @@ class Settings(BaseSettings):
     withings_client_secret: str | None = None
     base_url: str | None = None  # e.g., https://your-app.railway.app
 
-
 settings = Settings()

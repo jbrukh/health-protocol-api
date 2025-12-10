@@ -148,13 +148,8 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     if not body or body == b"":
         return {"status": "ok"}
 
-    signature = request.headers.get("X-Withings-Signature", "")
-
     # Log webhook details for debugging
-    logging.info(f"Withings webhook received: body={body}, signature={signature}, headers={request.headers}")
-
-    if not signature or not withings_service.verify_signature(body, signature):
-        raise HTTPException(status_code=401, detail="Invalid signature")
+    logging.info(f"Withings webhook received: body={body}, headers={request.headers}")
 
     # Parse form data from raw body (can't use request.form() after reading body)
     # Withings sends URL-encoded form data: appli=1&startdate=123&enddate=456
