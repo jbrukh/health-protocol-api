@@ -132,24 +132,75 @@ async def get_recipe(recipe_id: int, db_path: str | None = None) -> RecipeRespon
 
 
 async def list_recipes(db_path: str | None = None) -> list[RecipeListResponse]:
-    """List all recipes with computed totals."""
+    """List all recipes with computed totals using a single query."""
     async with get_db(db_path) as db:
-        cursor = await db.execute("SELECT * FROM recipes ORDER BY name")
+        # Fetch all recipes with their items in a single JOIN query
+        cursor = await db.execute(
+            """
+            SELECT r.id, r.name, r.created_at, r.updated_at,
+                   ri.id as item_id, ri.ingredient_id, ri.amount, ri.unit,
+                   i.name as ingredient_name, i.default_amount,
+                   i.calories, i.protein_g, i.carbs_g, i.fats_g, i.sodium_mg
+            FROM recipes r
+            LEFT JOIN recipe_items ri ON r.id = ri.recipe_id
+            LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+            ORDER BY r.name, ri.id
+            """
+        )
         rows = await cursor.fetchall()
 
-        recipes = []
+        # Group items by recipe
+        recipes_dict: dict[int, dict] = {}
         for row in rows:
-            items = await get_recipe_items(row["id"], db_path)
-            totals = await compute_recipe_totals(items)
+            recipe_id = row["id"]
+            if recipe_id not in recipes_dict:
+                recipes_dict[recipe_id] = {
+                    "id": recipe_id,
+                    "name": row["name"],
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "items": [],
+                }
+
+            # Only add item if it exists (LEFT JOIN may return NULL)
+            if row["item_id"] is not None:
+                scale = row["amount"] / row["default_amount"] if row["default_amount"] else 1
+                recipes_dict[recipe_id]["items"].append(
+                    RecipeItemResponse(
+                        id=row["item_id"],
+                        ingredient_id=row["ingredient_id"],
+                        ingredient_name=row["ingredient_name"],
+                        amount=row["amount"],
+                        unit=row["unit"],
+                        calories=round(row["calories"] * scale),
+                        protein_g=round(row["protein_g"] * scale, 1),
+                        carbs_g=round(row["carbs_g"] * scale, 1),
+                        fats_g=round(row["fats_g"] * scale, 1),
+                        sodium_mg=round(row["sodium_mg"] * scale),
+                    )
+                )
+
+        # Convert to response objects with computed totals
+        recipes = []
+        for recipe_data in recipes_dict.values():
+            items = recipe_data["items"]
+            totals = RecipeTotals(
+                calories=sum(item.calories for item in items),
+                protein_g=round(sum(item.protein_g for item in items), 1),
+                carbs_g=round(sum(item.carbs_g for item in items), 1),
+                fats_g=round(sum(item.fats_g for item in items), 1),
+                sodium_mg=sum(item.sodium_mg for item in items),
+            )
             recipes.append(
                 RecipeListResponse(
-                    id=row["id"],
-                    name=row["name"],
+                    id=recipe_data["id"],
+                    name=recipe_data["name"],
                     totals=totals,
-                    created_at=datetime.fromisoformat(row["created_at"]),
-                    updated_at=datetime.fromisoformat(row["updated_at"]),
+                    created_at=datetime.fromisoformat(recipe_data["created_at"]),
+                    updated_at=datetime.fromisoformat(recipe_data["updated_at"]),
                 )
             )
+
         return recipes
 
 
