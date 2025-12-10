@@ -356,10 +356,9 @@ def verify_signature(body: bytes, signature: str) -> bool:
     import hmac
     import hashlib
     import base64
-    logger = logging.getLogger("app.withings")
 
     if not settings.withings_client_secret:
-        logger.warning("Withings webhook verification failed: client secret not configured")
+        logging.warning("Withings webhook verification failed: client secret not configured")
         return False
 
     mac = hmac.new(
@@ -375,7 +374,7 @@ def verify_signature(body: bytes, signature: str) -> bool:
     if hmac.compare_digest(expected_hex, signature) or hmac.compare_digest(expected_b64, signature):
         return True
 
-    logger.warning(
+    logging.warning(
         "Withings webhook verification failed: signature mismatch",
         extra={
             "sig_len": len(signature),
