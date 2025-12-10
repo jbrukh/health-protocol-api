@@ -151,7 +151,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     signature = request.headers.get("X-Withings-Signature", "")
 
     # Log webhook details for debugging
-    logging.info(f"Withings webhook received: body={body}, signature={signature}")
+    logging.info(f"Withings webhook received: body={body}, signature={signature}, headers={request.headers}")
 
     if not signature or not withings_service.verify_signature(body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
