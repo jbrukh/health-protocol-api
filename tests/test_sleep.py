@@ -1,7 +1,9 @@
 """Tests for sleep endpoints."""
 import pytest
+from datetime import date
 
 from app.database import get_db
+from app.utils import timezone as tz_utils
 
 
 class TestSleepEndpoints:
@@ -97,3 +99,21 @@ class TestSleepEndpoints:
         """Test that auth is required."""
         response = await client.get("/sleep")
         assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_default_sleep_date_uses_profile_timezone(self, monkeypatch, client, auth_headers, test_db):
+        """Default date selection should use profile timezone-aware 'today'."""
+        target_date = "2020-01-03"
+        async with get_db() as db:
+            await db.execute(
+                "INSERT INTO sleep (date, duration_minutes, source) VALUES (?, ?, ?)",
+                (target_date, 400, "manual"),
+            )
+            await db.commit()
+
+        from app.routers import sleep as sleep_router
+        monkeypatch.setattr(sleep_router, "current_date_in_timezone", lambda tz: date.fromisoformat(target_date))
+
+        response = await client.get("/sleep", headers=auth_headers)
+        assert response.status_code == 200
+        assert response.json()["date"] == target_date

@@ -7,6 +7,7 @@ from app.auth import verify_token
 from app.models.macro import MacroTodayResponse, MacroRemainingResponse, MacroHistoryResponse
 from app.services import macro_service
 from app.services.profile_service import get_profile
+from app.utils.timezone import current_date_in_timezone
 
 router = APIRouter()
 
@@ -36,10 +37,10 @@ async def get_macro_history(
     _: str = Depends(verify_token),
 ) -> MacroHistoryResponse:
     """Get macro and body measurement history for a date range with pagination."""
+    profile = await get_profile()
     if end_date is None:
-        end_date = date.today()
+        end_date = current_date_in_timezone(profile.timezone)
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    profile = await get_profile()
     return await macro_service.get_macro_history(start_date, end_date, limit, offset, timezone=profile.timezone)

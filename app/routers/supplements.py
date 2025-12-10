@@ -14,6 +14,7 @@ from app.models.supplement import (
     TimeOfDay,
 )
 from app.services import supplement_service
+from app.services.profile_service import get_profile
 
 router = APIRouter()
 
@@ -51,7 +52,8 @@ async def get_supplement_schedule(
     _: str = Depends(verify_token),
 ) -> SupplementScheduleResponse:
     """Get today's supplement schedule organized by time of day."""
-    return await supplement_service.get_supplement_schedule()
+    profile = await get_profile()
+    return await supplement_service.get_supplement_schedule(timezone=profile.timezone)
 
 
 @router.get("/history", response_model=SupplementHistoryResponse)

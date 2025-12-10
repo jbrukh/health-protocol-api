@@ -128,9 +128,11 @@ async def get_active_supplements(db_path: str | None = None) -> SupplementListRe
     return await list_supplements(active=True, db_path=db_path)
 
 
-async def get_supplement_schedule(db_path: str | None = None) -> SupplementScheduleResponse:
+async def get_supplement_schedule(timezone: str | None = None, db_path: str | None = None) -> SupplementScheduleResponse:
     """Get today's supplement schedule organized by time of day."""
-    today = date.today()
+    from app.utils.timezone import current_date_in_timezone
+
+    today = current_date_in_timezone(timezone)
     result = await list_supplements(active=True, db_path=db_path)
 
     # Organize by time of day

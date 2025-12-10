@@ -1,6 +1,9 @@
 import pytest
 from datetime import date
 
+from app.models.food import FoodCreate
+from app.services import food_service, macro_service
+
 
 @pytest.mark.asyncio
 async def test_get_today_macros(client, auth_headers):
@@ -95,3 +98,31 @@ async def test_macro_percentages(client, auth_headers):
     assert result["targets"]["calories"]["percent_of_min"] == 50.0
     assert result["targets"]["protein_g"]["percent_of_min"] == 50.0
     assert result["targets"]["sodium_mg"]["percent_of_max"] == 50.0
+
+
+@pytest.mark.asyncio
+async def test_today_macros_use_profile_timezone(monkeypatch, test_db):
+    """Today's macros should use the profile timezone to determine current date."""
+    target_date = date(2020, 1, 15)
+
+    await food_service.create_food(
+        FoodCreate(
+            date=target_date,
+            marker="late",
+            name="Late meal",
+            amount=1,
+            unit="serving",
+            calories=500,
+            protein_g=40,
+            carbs_g=10,
+            fats_g=20,
+            sodium_mg=300,
+        ),
+        test_db,
+    )
+
+    monkeypatch.setattr(macro_service, "current_date_in_timezone", lambda tz: target_date)
+
+    today = await macro_service.get_today_macros(test_db)
+    assert today.date == target_date
+    assert today.totals.calories == 500

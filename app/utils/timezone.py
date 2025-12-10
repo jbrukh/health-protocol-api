@@ -24,3 +24,13 @@ def convert_date_time_to_tz(d: date, t: time, timezone: str | None) -> tuple[dat
         return converted.date(), converted.time()
     except Exception:
         return d, t
+
+
+def current_date_in_timezone(timezone: str | None) -> date:
+    """Return today's date in the given timezone (falls back to server date on errors)."""
+    if timezone:
+        try:
+            return datetime.now(ZoneInfo(timezone)).date()
+        except Exception:
+            pass
+    return date.today()

@@ -95,6 +95,9 @@ async def is_token_valid() -> bool:
 
 async def refresh_tokens() -> WithingsTokens | None:
     """Refresh the access token using the refresh token."""
+    if not settings.withings_client_id or not settings.withings_client_secret:
+        return None
+
     tokens = await get_tokens()
     if not tokens:
         return None

@@ -19,12 +19,13 @@ from app.models.macro import (
 from app.services.profile_service import get_profile
 from app.services.snapshot_service import compute_snapshot, get_or_create_snapshot
 from app.services.body_service import get_measurements_range
+from app.utils.timezone import current_date_in_timezone
 
 
 async def get_today_macros(db_path: str | None = None) -> MacroTodayResponse:
     """Get today's macro totals with target percentages."""
-    today = date.today()
     profile = await get_profile(db_path)
+    today = current_date_in_timezone(profile.timezone)
     totals = await compute_snapshot(today, db_path)
 
     targets = MacroTargets(
@@ -78,8 +79,8 @@ async def get_today_macros(db_path: str | None = None) -> MacroTodayResponse:
 
 async def get_remaining_macros(db_path: str | None = None) -> MacroRemainingResponse:
     """Get remaining macro budget for today."""
-    today = date.today()
     profile = await get_profile(db_path)
+    today = current_date_in_timezone(profile.timezone)
     totals = await compute_snapshot(today, db_path)
 
     def calc_remaining(current: float, min_target: int, max_target: int) -> MacroRemainingItem:

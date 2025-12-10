@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from app.database import init_db
 from app.models.body import BodyMeasurementCreate, BodyMeasurementUpdate
 from app.services import body_service
+from app.utils import timezone as tz_utils
 
 @pytest.mark.asyncio
 async def test_create_measurement(client, auth_headers):
@@ -128,6 +129,24 @@ async def test_delete_measurement(client, auth_headers):
 
     response = await client.delete(f"/body/{measurement_id}", headers=auth_headers)
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_body_default_dates_use_profile_timezone(monkeypatch, client, auth_headers):
+    """Default body date range should be based on profile timezone-aware 'today'."""
+    target_date = date(2020, 1, 2).isoformat()
+
+    await client.post("/body", json={
+        "date": target_date, "time": "07:00:00", "weight_lbs": 180.0,
+    }, headers=auth_headers)
+
+    from app.routers import body as body_router
+    monkeypatch.setattr(body_router, "current_date_in_timezone", lambda tz: date.fromisoformat(target_date))
+
+    response = await client.get("/body", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert any(m["date"] == target_date for m in data["measurements"])
 
 
 @pytest.mark.asyncio
