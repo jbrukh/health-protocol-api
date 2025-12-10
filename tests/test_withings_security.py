@@ -13,6 +13,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime, timedelta
 import hmac
 import hashlib
+import base64
 
 from app.services import withings_service, withings_sync
 from app.database import get_db
@@ -108,6 +109,27 @@ class TestWebhookSecurity:
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-Withings-Signature": signature,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+
+    @pytest.mark.asyncio
+    async def test_webhook_accepts_base64_signature(self, client, test_db, monkeypatch):
+        """Webhook should accept base64 encoded HMAC signatures (Withings spec)."""
+        from app.config import settings
+        monkeypatch.setattr(settings, "withings_client_secret", "secret")
+
+        body = b"userid=12345&appli=1"
+        signature = hmac.new(b"secret", body, hashlib.sha256).digest()
+        b64_sig = base64.b64encode(signature).decode()
+
+        response = await client.post(
+            "/withings/webhook",
+            content=body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Withings-Signature": b64_sig,
             },
         )
         assert response.status_code == 200

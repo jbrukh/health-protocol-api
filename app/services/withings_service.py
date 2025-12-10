@@ -354,14 +354,19 @@ def verify_signature(body: bytes, signature: str) -> bool:
     """Verify webhook signature using HMAC-SHA256."""
     import hmac
     import hashlib
+    import base64
 
     if not settings.withings_client_secret:
         return False
 
-    expected = hmac.new(
+    mac = hmac.new(
         settings.withings_client_secret.encode(),
         body,
         hashlib.sha256,
-    ).hexdigest()
+    ).digest()
 
-    return hmac.compare_digest(expected, signature)
+    # Accept both hex and base64 encodings (Withings docs use base64)
+    expected_hex = mac.hex()
+    expected_b64 = base64.b64encode(mac).decode()
+
+    return hmac.compare_digest(expected_hex, signature) or hmac.compare_digest(expected_b64, signature)
