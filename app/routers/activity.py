@@ -10,6 +10,8 @@ from app.models.activity import (
     DailyActivitySummaryResponse,
 )
 from app.services import activity_service
+from app.services.profile_service import get_profile
+from app.utils.timezone import current_date_in_timezone
 
 router = APIRouter()
 
@@ -23,8 +25,9 @@ async def get_activity(
     _: str = Depends(verify_token),
 ):
     """Get daily activity for a date range with pagination. Defaults to last 30 days."""
+    profile = await get_profile()
     if end_date is None:
-        end_date = date_type.today()
+        end_date = current_date_in_timezone(profile.timezone)
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 

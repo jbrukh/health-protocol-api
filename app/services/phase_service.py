@@ -13,23 +13,22 @@ from app.models.phase import (
     UpcomingPhase,
     ActivePhasesResponse,
 )
+from app.utils.timezone import current_date_in_timezone
 
 
-def _compute_is_active(start_date: date, end_date: date) -> bool:
+def _compute_is_active(start_date: date, end_date: date, today: date) -> bool:
     """Check if a phase is currently active."""
-    today = date.today()
     return start_date <= today <= end_date
 
 
-def _compute_days_remaining(end_date: date) -> Optional[int]:
+def _compute_days_remaining(end_date: date, today: date) -> Optional[int]:
     """Compute days remaining until phase ends."""
-    today = date.today()
     if end_date < today:
         return None
     return (end_date - today).days
 
 
-def _row_to_response(row) -> PhaseResponse:
+def _row_to_response(row, today: date) -> PhaseResponse:
     """Convert a database row to a PhaseResponse."""
     start_dt = date.fromisoformat(row["start_date"])
     end_dt = date.fromisoformat(row["end_date"])
@@ -41,8 +40,8 @@ def _row_to_response(row) -> PhaseResponse:
         end_date=end_dt,
         is_recurring=bool(row["is_recurring"]),
         recurrence_interval_days=row["recurrence_interval_days"],
-        is_active=_compute_is_active(start_dt, end_dt),
-        days_remaining=_compute_days_remaining(end_dt),
+        is_active=_compute_is_active(start_dt, end_dt, today),
+        days_remaining=_compute_days_remaining(end_dt, today),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
@@ -74,8 +73,9 @@ async def create_phase(data: PhaseCreate, db_path: str | None = None) -> PhaseRe
     return await get_phase(phase_id, db_path)
 
 
-async def get_phase(phase_id: int, db_path: str | None = None) -> PhaseResponse:
+async def get_phase(phase_id: int, db_path: str | None = None, timezone: str | None = None) -> PhaseResponse:
     """Get a phase by ID."""
+    today = current_date_in_timezone(timezone)
     async with get_db(db_path) as db:
         cursor = await db.execute(
             "SELECT * FROM phases WHERE id = ?",
@@ -89,28 +89,30 @@ async def get_phase(phase_id: int, db_path: str | None = None) -> PhaseResponse:
                 detail=f"Phase with id {phase_id} not found",
             )
 
-        return _row_to_response(row)
+        return _row_to_response(row, today)
 
 
 async def list_phases(
     active: Optional[bool] = None,
     include_past: bool = True,
     db_path: str | None = None,
+    timezone: str | None = None,
 ) -> PhaseListResponse:
     """List all phases with optional filters."""
+    today = current_date_in_timezone(timezone)
     async with get_db(db_path) as db:
         query = "SELECT * FROM phases"
         params = []
 
         if not include_past:
             query += " WHERE end_date >= ?"
-            params.append(date.today().isoformat())
+            params.append(today.isoformat())
 
         query += " ORDER BY start_date, end_date"
         cursor = await db.execute(query, params)
         rows = await cursor.fetchall()
 
-        phases = [_row_to_response(row) for row in rows]
+        phases = [_row_to_response(row, today) for row in rows]
 
         # Filter by active status in Python (since it's computed)
         if active is not None:
@@ -119,9 +121,9 @@ async def list_phases(
         return PhaseListResponse(phases=phases)
 
 
-async def get_active_phases(db_path: str | None = None) -> ActivePhasesResponse:
+async def get_active_phases(db_path: str | None = None, timezone: str | None = None) -> ActivePhasesResponse:
     """Get all currently active phases and upcoming phases (next 7 days)."""
-    today = date.today()
+    today = current_date_in_timezone(timezone)
     upcoming_window = today + timedelta(days=7)
 
     async with get_db(db_path) as db:

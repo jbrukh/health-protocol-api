@@ -1,6 +1,8 @@
 import pytest
 from datetime import date, timedelta
 
+from app.routers import phases as phases_router
+
 
 @pytest.mark.asyncio
 async def test_create_phase(client, auth_headers):
@@ -192,6 +194,27 @@ async def test_get_active_phases(client, auth_headers):
     assert "total_active" in result
     assert "total_upcoming" in result
     assert result["total_active"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_phase_filters_use_profile_timezone(monkeypatch, client, auth_headers):
+    """Active/upcoming calculations should use profile timezone-aware today."""
+    target_today = date(2020, 5, 1)
+
+    # Phase that should be considered active relative to target_today
+    await client.post("/phases", json={
+        "name": "TZ Active",
+        "description": "Active in target tz",
+        "start_date": "2020-04-30",
+        "end_date": "2020-05-02",
+    }, headers=auth_headers)
+
+    monkeypatch.setattr(phases_router.phase_service, "current_date_in_timezone", lambda tz: target_today)
+
+    response = await client.get("/phases/active", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert any(p["name"] == "TZ Active" for p in data["active_phases"])
 
 
 @pytest.mark.asyncio

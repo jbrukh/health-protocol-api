@@ -11,6 +11,7 @@ from app.models.phase import (
     ActivePhasesResponse,
 )
 from app.services import phase_service
+from app.services.profile_service import get_profile
 
 router = APIRouter()
 
@@ -31,7 +32,8 @@ async def list_phases(
     _: str = Depends(verify_token),
 ) -> PhaseListResponse:
     """List all phases with optional filters."""
-    return await phase_service.list_phases(active=active, include_past=include_past)
+    profile = await get_profile()
+    return await phase_service.list_phases(active=active, include_past=include_past, timezone=profile.timezone)
 
 
 @router.get("/active", response_model=ActivePhasesResponse)
@@ -39,7 +41,8 @@ async def get_active_phases(
     _: str = Depends(verify_token),
 ) -> ActivePhasesResponse:
     """Get all currently active phases and upcoming phases (next 7 days)."""
-    return await phase_service.get_active_phases()
+    profile = await get_profile()
+    return await phase_service.get_active_phases(timezone=profile.timezone)
 
 
 @router.get("/{phase_id}", response_model=PhaseResponse)

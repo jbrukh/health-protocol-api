@@ -1,7 +1,9 @@
 """Tests for activity endpoints."""
 import pytest
+from datetime import date
 
 from app.database import get_db
+from app.utils import timezone as tz_utils
 
 
 class TestActivityEndpoints:
@@ -78,3 +80,23 @@ class TestActivityEndpoints:
         """Test that auth is required."""
         response = await client.get("/activity")
         assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_activity_defaults_use_profile_timezone(self, monkeypatch, client, auth_headers, test_db):
+        """Default date range should be based on profile timezone-aware 'today'."""
+        target_date = "2020-02-01"
+
+        async with get_db() as db:
+            await db.execute(
+                "INSERT INTO daily_activity (date, steps, source) VALUES (?, ?, ?)",
+                (target_date, 5000, "manual"),
+            )
+            await db.commit()
+
+        from app.routers import activity as activity_router
+        monkeypatch.setattr(activity_router, "current_date_in_timezone", lambda tz: date.fromisoformat(target_date))
+
+        response = await client.get("/activity", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert any(a["date"] == target_date for a in data["activities"])
