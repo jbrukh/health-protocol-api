@@ -1,6 +1,7 @@
 from datetime import datetime, date, timezone
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qs
 import asyncio
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 
@@ -150,17 +151,21 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
     signature = request.headers.get("X-Withings-Signature", "")
 
     # Log webhook details for debugging
-    import logging
-    logging.info(f"Withings webhook received: body={body}, signature={signature}, headers={dict(request.headers)}")
+    logging.info(f"Withings webhook received: body={body}, signature={signature}")
 
     if not signature or not withings_service.verify_signature(body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
 
-    # Parse form data
-    form = await request.form()
-    appli = int(form.get("appli", 0))
-    startdate = form.get("startdate")
-    enddate = form.get("enddate")
+    # Parse form data from raw body (can't use request.form() after reading body)
+    # Withings sends URL-encoded form data: appli=1&startdate=123&enddate=456
+    try:
+        form_data = parse_qs(body.decode("utf-8"))
+        appli = int(form_data.get("appli", ["0"])[0])
+        startdate = form_data.get("startdate", [None])[0]
+        enddate = form_data.get("enddate", [None])[0]
+    except (ValueError, UnicodeDecodeError) as e:
+        logging.error(f"Failed to parse webhook form data: {e}")
+        raise HTTPException(status_code=400, detail="Invalid form data")
 
     # Dispatch sync in background (using safe wrapper to log errors)
     start_ts = int(startdate) if startdate else None

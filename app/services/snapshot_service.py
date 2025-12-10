@@ -32,7 +32,11 @@ async def compute_snapshot(snapshot_date: date, db_path: str | None = None) -> M
 
 
 async def get_or_create_snapshot(snapshot_date: date, db_path: str | None = None) -> MacroTotals:
-    """Get existing snapshot or compute and store a new one."""
+    """Get existing snapshot or compute and store a new one.
+
+    Uses INSERT OR REPLACE to handle race conditions where multiple requests
+    try to create the same snapshot simultaneously.
+    """
     async with get_db(db_path) as db:
         cursor = await db.execute(
             "SELECT * FROM daily_snapshots WHERE date = ?",
@@ -51,9 +55,11 @@ async def get_or_create_snapshot(snapshot_date: date, db_path: str | None = None
 
         totals = await compute_snapshot(snapshot_date, db_path)
 
+        # Use INSERT OR REPLACE to handle race conditions - if another request
+        # already inserted a row for this date, we'll just update it
         await db.execute(
             """
-            INSERT INTO daily_snapshots (date, calories, protein_g, carbs_g, fats_g, sodium_mg)
+            INSERT OR REPLACE INTO daily_snapshots (date, calories, protein_g, carbs_g, fats_g, sodium_mg)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
